@@ -2,6 +2,7 @@ import pygame
 from pygame.locals import *
 
 from world import World
+import creatures
 
 
 # класс для хранения и отрисовки групп спрайтов
@@ -46,7 +47,7 @@ if __name__ == '__main__':
     height = infoObject.current_h // TILE_HEIGHT * TILE_HEIGHT
 
     sprite_groups = SpritesGroups()
-    creatures_group = pygame.sprite.Group()
+    hero_group = pygame.sprite.Group()
 
     # создание окна
     flags = FULLSCREEN | DOUBLEBUF
@@ -81,8 +82,8 @@ if __name__ == '__main__':
     sprite_groups.draw(chunks)
 
     hero_surface = pygame.Surface((48, 48), pygame.SRCALPHA, 32)
-    hero = (creatures_group, "hero.png")
-    creatures_group.draw(hero_surface)
+    hero = creatures.Hero(hero_group)
+    hero_group.draw(hero_surface)
 
     # координаты центрального чанка на дисплее
     camera_x, camera_y = -hero_pos_x - width // 2, -hero_pos_y - height // 2

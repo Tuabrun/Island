@@ -31,7 +31,7 @@ class World:
     def create_matrix(self, line, matrix, spawn=False):
         # количество тайлов на экран
         chunk_size_x = self.screen_width // TILE_WIDTH
-        chunk_size_y = self.screen_height // tile_height
+        chunk_size_y = self.screen_height // TILE_HEIGHT
         spawn_x = None
         spawn_y = None
         # максимальное количество тайлов травы на координате y
@@ -56,7 +56,7 @@ class World:
                             self.main_chunk_y = (self.height - y) // chunk_size_y
                             # координаты спавна персонажа В ЦЕНТРАЛЬНОМ ЧАНКЕ
                             spawn_x = x % chunk_size_x * TILE_WIDTH
-                            spawn_y = (self.height - y) % chunk_size_y * tile_height
+                            spawn_y = (self.height - y) % chunk_size_y * TILE_HEIGHT
                             break
             matrix.append(line_x)
         # разворот по координате y, так как pynoise создаёт массив задом на перёд
@@ -85,7 +85,7 @@ class World:
     def draw(self, direction=None):
         tile_type = None
         chunk_size_x = int(self.screen_width // TILE_WIDTH)
-        chunk_size_y = int(self.screen_height // tile_height)
+        chunk_size_y = int(self.screen_height // TILE_HEIGHT)
         # координаты левого верхнего чанка, где еденичный отрезок - это размеры чанка
         start_x = self.main_chunk_x - 1
         start_y = self.main_chunk_y - 1
