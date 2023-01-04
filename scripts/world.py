@@ -6,7 +6,7 @@ from pynoise.colors import Color
 
 import objects
 
-tile_width = tile_height = 96
+TILE_WIDTH = TILE_HEIGHT = 96
 
 
 class World:
@@ -30,7 +30,7 @@ class World:
     # двухмерный массив для удобного вычисления координат тайлов и объектов
     def create_matrix(self, line, matrix, spawn=False):
         # количество тайлов на экран
-        chunk_size_x = self.screen_width // tile_width
+        chunk_size_x = self.screen_width // TILE_WIDTH
         chunk_size_y = self.screen_height // tile_height
         spawn_x = None
         spawn_y = None
@@ -55,14 +55,12 @@ class World:
                             self.main_chunk_x = x // chunk_size_x
                             self.main_chunk_y = (self.height - y) // chunk_size_y
                             # координаты спавна персонажа В ЦЕНТРАЛЬНОМ ЧАНКЕ
-                            spawn_x = x % chunk_size_x * tile_width
+                            spawn_x = x % chunk_size_x * TILE_WIDTH
                             spawn_y = (self.height - y) % chunk_size_y * tile_height
                             break
             matrix.append(line_x)
         # разворот по координате y, так как pynoise создаёт массив задом на перёд
         matrix = matrix[::-1]
-        if spawn:
-            matrix[spawn_y // tile_height + self.main_chunk_y * chunk_size_y][spawn_x // tile_width + self.main_chunk_x * chunk_size_x] = 1
         if spawn:
             return matrix, spawn_x, spawn_y
         return matrix
@@ -86,8 +84,8 @@ class World:
 
     def draw(self, direction=None):
         tile_type = None
-        chunk_size_x = self.screen_width // tile_width
-        chunk_size_y = self.screen_height // tile_height
+        chunk_size_x = int(self.screen_width // TILE_WIDTH)
+        chunk_size_y = int(self.screen_height // tile_height)
         # координаты левого верхнего чанка, где еденичный отрезок - это размеры чанка
         start_x = self.main_chunk_x - 1
         start_y = self.main_chunk_y - 1
@@ -98,7 +96,7 @@ class World:
 
         start_index_x = -1
         index_y = -1
-        # настройка для отрисовка лишь 3 чанков в направлении движения камеры
+        # настройка для отрисовка лишь 3 чанков по направлении движения камеры
         if direction == "up":
             final_y = start_y
             final_y += 1
@@ -140,7 +138,6 @@ class World:
                                 objects.Stone(self.sprite_groups.get_group_of_objects()[index_x + index_y * 3], x, y)
                         if tile_num == 1:
                             tile_type = "pers.png"
-                        print(index_x + index_y * 3)
                         objects.Tile(self.sprite_groups.get_group_of_chunks()[index_x + index_y * 3], tile_type, x, y)
 
     def make_map(self):
