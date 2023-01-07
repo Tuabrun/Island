@@ -51,7 +51,7 @@ class World:
                     for x in range(self.width):
                         # если рядом с тайлом песка есть тайл травы, то тайл с песком становиться местом спавна
                         if -0.2 <= line_x[x] < 0 and (line_x[x - 1] == 0 or line_x[x - 1] == 0):
-                            # координаты центрального чанка, где еденичный отрезок - это размеры чанка
+                            # координаты центрального чанка, где единичный отрезок - это размеры чанка
                             self.main_chunk_x = x // chunk_size_x
                             self.main_chunk_y = (self.height - y) // chunk_size_y
                             # координаты спавна персонажа В ЦЕНТРАЛЬНОМ ЧАНКЕ
@@ -67,30 +67,30 @@ class World:
 
     def create_world(self):
         # тип шума и его настройки
-        sourse = Clamp(Billow(seed=self.seed), -1, 0)
+        source = Clamp(Billow(seed=self.seed), -1, 0)
         # карта шума в виде одномерного массива
         self.world_line = noise_map_plane_gpu(width=self.width, height=self.height, lower_x=2,
-                                              upper_x=6, lower_z=1, upper_z=5, source=sourse)
+                                              upper_x=6, lower_z=1, upper_z=5, source=source)
         self.world_grid, spawn_x, spawn_y = self.create_matrix(self.world_line, self.world_grid, spawn=True)
         return spawn_x, spawn_y
 
     def filling_the_world(self):
         # тип шума и его настройки
-        sourse = Exponent(Perlin(frequency=100, seed=self.seed), 1.25)
+        source = Exponent(Perlin(frequency=100, seed=self.seed), 1.25)
         # карта шума в виде одномерного массива
         self.objects_line = noise_map_plane_gpu(width=self.width, height=self.height, lower_x=6,
-                                                upper_x=18, lower_z=1, upper_z=5, source=sourse)
+                                                upper_x=18, lower_z=1, upper_z=5, source=source)
         self.objects_grid = self.create_matrix(self.objects_line, self.objects_grid)
 
     def draw(self, direction=None):
         tile_type = None
         chunk_size_x = int(self.screen_width // TILE_WIDTH)
         chunk_size_y = int(self.screen_height // TILE_HEIGHT)
-        # координаты левого верхнего чанка, где еденичный отрезок - это размеры чанка
+        # координаты левого верхнего чанка, где единичный отрезок - это размеры чанка
         start_x = self.main_chunk_x - 1
         start_y = self.main_chunk_y - 1
 
-        # координаты правого нижнего чанка, где еденичный отрезок - это размеры чанка
+        # координаты правого нижнего чанка, где единичный отрезок - это размеры чанка
         final_x = start_x + 3
         final_y = start_y + 3
 
@@ -124,21 +124,22 @@ class World:
                         tile_num = self.world_grid[chunk_y * chunk_size_y + y][chunk_x * chunk_size_x + x]
                         # значение объекта
                         object_num = self.objects_grid[chunk_y * chunk_size_y + y][chunk_x * chunk_size_x + x]
+                        tile_groups = [self.sprite_groups.get()[0][index_x + index_y * 3]]
+
                         if -1 <= tile_num < -0.2:
                             tile_type = "water.png"
+                            tile_groups.append(self.sprite_groups.group_of_water_tiles[index_x + index_y * 3])
                         if -0.2 <= tile_num < 0:
-                            tile_type = "sand0.png"
+                            tile_type = "sand.png"
                             if 0.5 <= object_num:
-                                objects.Stone(self.sprite_groups.get_group_of_objects()[index_x + index_y * 3], x, y)
+                                objects.Stone(self.sprite_groups.get()[1][index_x + index_y * 3], x, y)
                         if tile_num == 0:
                             tile_type = "grass.png"
                             if 0.2 <= object_num < 0.5:
-                                objects.Tree(self.sprite_groups.get_group_of_objects()[index_x + index_y * 3], x, y)
+                                objects.Tree(self.sprite_groups.get()[1][index_x + index_y * 3], x, y)
                             if 0.5 <= object_num:
-                                objects.Stone(self.sprite_groups.get_group_of_objects()[index_x + index_y * 3], x, y)
-                        if tile_num == 1:
-                            tile_type = "pers.png"
-                        objects.Tile(self.sprite_groups.get_group_of_chunks()[index_x + index_y * 3], tile_type, x, y)
+                                objects.Stone(self.sprite_groups.get()[1][index_x + index_y * 3], x, y)
+                        objects.Tile(tile_groups, tile_type, x, y)
 
     def make_map(self):
         # определение цветов для мини карты в плитре RGB
