@@ -21,13 +21,13 @@ class SpritesGroupsForChunks:
             self.group_of_water_tiles.append(water_tiles_group)
             self.group_of_objects.append(objects_group)
 
-    def get(self):
+    def get_group_of_chunks_and_objects(self):
         return [self.group_of_chunks, self.group_of_objects]
 
     # метод для отрисовки групп спрайтов. Принимает на вход массив из surface
     # далее названием chunk будет называться surface размером с экран
     def draw(self, chunks):
-        for sprite_group in self.get():
+        for sprite_group in self.get_group_of_chunks_and_objects():
             for i in range(9):
                 sprite_group[i].draw(chunks[i])
 
@@ -78,7 +78,7 @@ if __name__ == '__main__':
     # отрисовка спрайтов на этих чанках
     sprite_groups.draw(chunks)
 
-    hero = creatures.Hero(hero_group, width, height)
+    hero = creatures.Hero(hero_group)
 
     # координаты центрального чанка на дисплее
     camera_x, camera_y = -hero_pos_x - width // 2, -hero_pos_y - height // 2
@@ -92,35 +92,39 @@ if __name__ == '__main__':
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_w:
-                    motion_y = "up"
-                if event.key == pygame.K_s:
-                    motion_y = "down"
                 if event.key == pygame.K_d:
                     motion_x = "right"
                 if event.key == pygame.K_a:
                     motion_x = "left"
+                if event.key == pygame.K_w:
+                    motion_y = "up"
+                if event.key == pygame.K_s:
+                    motion_y = "down"
             if event.type == pygame.KEYUP:
-                if event.key in [pygame.K_w, pygame.K_s]:
-                    motion_y = None
-                if event.key in [pygame.K_d, pygame.K_a]:
+                if event.key == pygame.K_d and motion_x == "right":
                     motion_x = None
+                if event.key == pygame.K_a and motion_x == "left":
+                    motion_x = None
+                if event.key == pygame.K_w and motion_y == "up":
+                    motion_y = None
+                if event.key == pygame.K_s and motion_y == "down":
+                    motion_y = None
 
-        motion = hero.udate(sprite_groups.group_of_water_tiles[4], motion_x, motion_y,
-                            hero_pos_x // TILE_WIDTH, hero_pos_y // TILE_HEIGHT)
+        motion = hero.check_collision(sprite_groups.group_of_water_tiles, motion_x, motion_y,
+                                      hero_pos_x, hero_pos_y, width, height)
 
-        if motion_y == "up" and not motion[1]:
-            camera_y += SPEED
-            hero_pos_y -= SPEED
-        if motion_y == "down" and not motion[1]:
-            camera_y -= SPEED
-            hero_pos_y += SPEED
-        if motion_x == "right" and not motion[0]:
+        if motion_x == "right" and motion[0] != "right":
             camera_x -= SPEED
             hero_pos_x += SPEED
-        if motion_x == "left" and not motion[0]:
+        if motion_x == "left" and motion[0] != "left":
             camera_x += SPEED
             hero_pos_x -= SPEED
+        if motion_y == "up" and motion[1] != "up":
+            camera_y += SPEED
+            hero_pos_y -= SPEED
+        if motion_y == "down" and motion[1] != "down":
+            camera_y -= SPEED
+            hero_pos_y += SPEED
 
         # дальше идут 4 похожих блока пока, поэтому поясю за все сразу
         # если центральный чанк полностью ущёл за границы экрана (тоесть координаты его верхнего левого угла
@@ -129,35 +133,12 @@ if __name__ == '__main__':
         # на группу спрайтов соседа по направлению движения камеры. Соответственно меняется и главный чанк по
         # направлению движения камеры. В конце все группы спрайтов отрисовываюся на своих чанках, а положение
         # камеры смещается к персонажу на главном чанке
-        if camera_y + height // 2 > 0:
-            sprite_groups_copy = SpritesGroupsForChunks()
-            for index in range(3, 9):
-                for group_of_sprites in range(len(sprite_groups.get())):
-                    sprite_groups_copy.get()[group_of_sprites][index] = sprite_groups.get()[group_of_sprites][index - 3]
-                sprite_groups_copy.group_of_water_tiles[index] = sprite_groups.group_of_water_tiles[index - 3]
-            sprite_groups = sprite_groups_copy
-            world.update(sprite_groups, "up")
-            sprite_groups.draw(chunks)
-            camera_y = -height - height // 2
-            hero_pos_y = width
-
-        if camera_y + height // 2 < -height:
-            sprite_groups_copy = SpritesGroupsForChunks()
-            for index in range(6):
-                for group_of_sprites in range(len(sprite_groups.get())):
-                    sprite_groups_copy.get()[group_of_sprites][index] = sprite_groups.get()[group_of_sprites][index + 3]
-                sprite_groups_copy.group_of_water_tiles[index] = sprite_groups.group_of_water_tiles[index + 3]
-            sprite_groups = sprite_groups_copy
-            world.update(sprite_groups, "down")
-            sprite_groups.draw(chunks)
-            camera_y = 0 - height // 2
-            hero_pos_y = 0
-
         if camera_x + width // 2 < -width:
             sprite_groups_copy = SpritesGroupsForChunks()
             for index in [0, 1, 3, 4, 6, 7]:
-                for group_of_sprites in range(len(sprite_groups.get())):
-                    sprite_groups_copy.get()[group_of_sprites][index] = sprite_groups.get()[group_of_sprites][index + 1]
+                for group_of_sprites in range(len(sprite_groups.get_group_of_chunks_and_objects())):
+                    sprite_groups_copy.get_group_of_chunks_and_objects()[group_of_sprites][index] =\
+                        sprite_groups.get_group_of_chunks_and_objects()[group_of_sprites][index + 1]
                 sprite_groups_copy.group_of_water_tiles[index] = sprite_groups.group_of_water_tiles[index + 1]
             sprite_groups = sprite_groups_copy
             world.update(sprite_groups, "right")
@@ -168,8 +149,9 @@ if __name__ == '__main__':
         if camera_x + width // 2 > 0:
             sprite_groups_copy = SpritesGroupsForChunks()
             for index in [1, 2, 4, 5, 7, 8]:
-                for group_of_sprites in range(len(sprite_groups.get())):
-                    sprite_groups_copy.get()[group_of_sprites][index] = sprite_groups.get()[group_of_sprites][index - 1]
+                for group_of_sprites in range(len(sprite_groups.get_group_of_chunks_and_objects())):
+                    sprite_groups_copy.get_group_of_chunks_and_objects()[group_of_sprites][index] =\
+                        sprite_groups.get_group_of_chunks_and_objects()[group_of_sprites][index - 1]
                 sprite_groups_copy.group_of_water_tiles[index] = sprite_groups.group_of_water_tiles[index - 1]
             sprite_groups = sprite_groups_copy
             world.update(sprite_groups, "left")
@@ -177,11 +159,37 @@ if __name__ == '__main__':
             camera_x = -width - width // 2
             hero_pos_x = width
 
+        if camera_y + height // 2 > 0:
+            sprite_groups_copy = SpritesGroupsForChunks()
+            for index in range(3, 9):
+                for group_of_sprites in range(len(sprite_groups.get_group_of_chunks_and_objects())):
+                    sprite_groups_copy.get_group_of_chunks_and_objects()[group_of_sprites][index] =\
+                        sprite_groups.get_group_of_chunks_and_objects()[group_of_sprites][index - 3]
+                sprite_groups_copy.group_of_water_tiles[index] = sprite_groups.group_of_water_tiles[index - 3]
+            sprite_groups = sprite_groups_copy
+            world.update(sprite_groups, "up")
+            sprite_groups.draw(chunks)
+            camera_y = -height - height // 2
+            hero_pos_y = height
+
+        if camera_y + height // 2 < -height:
+            sprite_groups_copy = SpritesGroupsForChunks()
+            for index in range(6):
+                for group_of_sprites in range(len(sprite_groups.get_group_of_chunks_and_objects())):
+                    sprite_groups_copy.get_group_of_chunks_and_objects()[group_of_sprites][index] =\
+                        sprite_groups.get_group_of_chunks_and_objects()[group_of_sprites][index + 3]
+                sprite_groups_copy.group_of_water_tiles[index] = sprite_groups.group_of_water_tiles[index + 3]
+            sprite_groups = sprite_groups_copy
+            world.update(sprite_groups, "down")
+            sprite_groups.draw(chunks)
+            camera_y = 0 - height // 2
+            hero_pos_y = 0
+
         # изменение положения всех чанков на дисплее
         for index_x in range(3):
             for index_y in range(3):
                 screen.blit(chunks[index_x + 3 * index_y], (camera_x + width * index_x, camera_y + height * index_y))
-        hero_group.draw(screen)
+        screen.blit(hero.get_image(), (width // 2, height // 2))
         pygame.display.flip()
         clock.tick(FPS)
     pygame.quit()

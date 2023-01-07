@@ -84,8 +84,8 @@ class World:
 
     def draw(self, direction=None):
         tile_type = None
-        chunk_size_x = int(self.screen_width // TILE_WIDTH)
-        chunk_size_y = int(self.screen_height // TILE_HEIGHT)
+        chunk_size_x = self.screen_width // TILE_WIDTH
+        chunk_size_y = self.screen_height // TILE_HEIGHT
         # координаты левого верхнего чанка, где единичный отрезок - это размеры чанка
         start_x = self.main_chunk_x - 1
         start_y = self.main_chunk_y - 1
@@ -97,13 +97,6 @@ class World:
         start_index_x = -1
         index_y = -1
         # настройка для отрисовка лишь 3 чанков по направлении движения камеры
-        if direction == "up":
-            final_y = start_y
-            final_y += 1
-        if direction == "down":
-            start_y = final_y
-            start_y -= 1
-            index_y = 1
         if direction == "right":
             start_x = final_x
             start_x -= 1
@@ -111,6 +104,13 @@ class World:
         if direction == "left":
             final_x = start_x
             final_x += 1
+        if direction == "up":
+            final_y = start_y
+            final_y += 1
+        if direction == "down":
+            start_y = final_y
+            start_y -= 1
+            index_y = 1
 
         # присвоение каждому тайлу и объекту своего спрайта
         for chunk_y in range(start_y, final_y):
@@ -124,7 +124,7 @@ class World:
                         tile_num = self.world_grid[chunk_y * chunk_size_y + y][chunk_x * chunk_size_x + x]
                         # значение объекта
                         object_num = self.objects_grid[chunk_y * chunk_size_y + y][chunk_x * chunk_size_x + x]
-                        tile_groups = [self.sprite_groups.get()[0][index_x + index_y * 3]]
+                        tile_groups = [self.sprite_groups.get_group_of_chunks_and_objects()[0][index_x + index_y * 3]]
 
                         if -1 <= tile_num < -0.2:
                             tile_type = "water.png"
@@ -132,14 +132,14 @@ class World:
                         if -0.2 <= tile_num < 0:
                             tile_type = "sand.png"
                             if 0.5 <= object_num:
-                                objects.Stone(self.sprite_groups.get()[1][index_x + index_y * 3], x, y)
+                                objects.Stone(self.sprite_groups.get_group_of_chunks_and_objects()[1][index_x + index_y * 3], x, y)
                         if tile_num == 0:
                             tile_type = "grass.png"
                             if 0.2 <= object_num < 0.5:
-                                objects.Tree(self.sprite_groups.get()[1][index_x + index_y * 3], x, y)
+                                objects.Tree(self.sprite_groups.get_group_of_chunks_and_objects()[1][index_x + index_y * 3], x, y)
                             if 0.5 <= object_num:
-                                objects.Stone(self.sprite_groups.get()[1][index_x + index_y * 3], x, y)
-                        objects.Tile(tile_groups, tile_type, x, y)
+                                objects.Stone(self.sprite_groups.get_group_of_chunks_and_objects()[1][index_x + index_y * 3], x, y)
+                        objects.Tile(tile_groups, tile_type, x, y,)
 
     def make_map(self):
         # определение цветов для мини карты в плитре RGB
@@ -155,12 +155,12 @@ class World:
     # по направлению движения
     def update(self, sprite_groups, direction):
         self.sprite_groups = sprite_groups
-        if direction == "up":
-            self.main_chunk_y -= 1
-        if direction == "down":
-            self.main_chunk_y += 1
         if direction == "right":
             self.main_chunk_x += 1
         if direction == "left":
             self.main_chunk_x -= 1
+        if direction == "up":
+            self.main_chunk_y -= 1
+        if direction == "down":
+            self.main_chunk_y += 1
         self.draw(direction)

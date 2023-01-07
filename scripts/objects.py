@@ -19,11 +19,11 @@ class Tile(pygame.sprite.Sprite):
 
 
 class Object(pygame.sprite.Sprite):
-    def __init__(self, object_group, object_type, object_width, object_height, pos_x, pos_y):
+    def __init__(self, object_group, object_type, pos_x, pos_y):
         super().__init__(object_group)
         self.health_points = 100
         self.image = load_image(object_type, alpha=True)
-        self.rect = self.image.get_rect().move(object_width * pos_x, object_height * pos_y)
+        self.rect = self.image.get_rect().move(TILE_WIDTH * pos_x, TILE_HEIGHT * pos_y)
 
     def update(self, hit=False):
         if hit:
@@ -34,9 +34,9 @@ class Object(pygame.sprite.Sprite):
 
 class Tree(Object):
     def __init__(self, object_group, pos_x, pos_y):
-        super().__init__(object_group, "tree.png", 96, 96, pos_x, pos_y)
+        super().__init__(object_group, "tree.png", pos_x, pos_y)
 
 
 class Stone(Object):
     def __init__(self, object_group, pos_x, pos_y):
-        super().__init__(object_group, "stone.png", 96, 96, pos_x, pos_y)
+        super().__init__(object_group, "stone.png", pos_x, pos_y)
