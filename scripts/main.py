@@ -53,6 +53,7 @@ if __name__ == '__main__':
 
     FPS = 60  # число кадров в секунду
     clock = pygame.time.Clock()
+    counter = -1
 
     # ограничение списка проверяемых событий для лучшей производительности
     pygame.event.set_allowed([QUIT, KEYDOWN, KEYUP])
@@ -79,6 +80,7 @@ if __name__ == '__main__':
     sprite_groups.draw(chunks)
 
     hero = creatures.Hero(hero_group)
+    direction = "right"
 
     # координаты центрального чанка на дисплее
     camera_x, camera_y = -hero_pos_x - width // 2, -hero_pos_y - height // 2
@@ -87,6 +89,9 @@ if __name__ == '__main__':
 
     running = True
     while running:
+        counter = (counter + 1) % 96
+        frame_number = counter // 4 + 1
+
         for event in pygame.event.get():
             # нажатие крестика в правом верхнем углу
             if event.type == pygame.QUIT:
@@ -100,6 +105,11 @@ if __name__ == '__main__':
                     motion_y = "up"
                 if event.key == pygame.K_s:
                     motion_y = "down"
+
+            direction = motion_x
+            if motion_x is None:
+                direction = motion_y
+
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_d and motion_x == "right":
                     motion_x = None
@@ -125,6 +135,10 @@ if __name__ == '__main__':
         if motion_y == "down" and motion[1] != "down":
             camera_y -= SPEED
             hero_pos_y += SPEED
+
+        if motion_x is None and motion_y is None:
+            frame_number = 0
+        hero.update("run", direction, frame_number)
 
         # дальше идут 4 похожих блока пока, поэтому поясю за все сразу
         # если центральный чанк полностью ущёл за границы экрана (тоесть координаты его верхнего левого угла
