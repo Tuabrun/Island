@@ -144,6 +144,7 @@ if __name__ == '__main__':
 
         running = True
         while running:
+            print(counter)
             counter = (counter + 1) % 96
             frame_number = counter // 4 + 1
 
