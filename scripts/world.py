@@ -3,6 +3,7 @@ from pynoise.noiseutil import noise_map_plane_gpu
 from pynoise.noiseutil import RenderImage
 from pynoise.noiseutil import GradientColor
 from pynoise.colors import Color
+import numpy
 
 import objects
 
@@ -14,7 +15,7 @@ DOWN = "down"
 
 
 class World:
-    def __init__(self, sprite_groups, width, height, seed, screen_width, screen_height):
+    def __init__(self, width, height, seed, screen_width, screen_height, sprite_groups=None):
         self.sprite_groups = sprite_groups
         self.width = width
         self.height = height
@@ -25,10 +26,12 @@ class World:
         self.chunk_size_x = self.screen_width // TILE_WIDTH
         self.chunk_size_y = self.screen_height // TILE_HEIGHT
 
-        self.world_line = None
-        self.world_grid = []
-        self.objects_line = None
-        self.objects_grid = []
+        self.hero_x = None
+        self.hero_y = None
+        self.tile_lines = None
+        self.tile_grids = []
+        self.object_lines = None
+        self.object_grids = []
 
         self.main_chunk_x = None
         self.main_chunk_y = None
@@ -74,18 +77,33 @@ class World:
         # тип шума и его настройки
         source = Clamp(Billow(seed=self.seed), -1, 0)
         # карта шума в виде одномерного массива
-        self.world_line = noise_map_plane_gpu(width=self.width, height=self.height, lower_x=2,
+        self.tile_lines = noise_map_plane_gpu(width=self.width, height=self.height, lower_x=2,
                                               upper_x=6, lower_z=1, upper_z=5, source=source)
-        self.world_grid, spawn_x, spawn_y = self.create_matrix(self.world_line, self.world_grid, spawn=True)
-        return spawn_x, spawn_y
+        self.tile_grids, self.hero_x, self.hero_y = self.create_matrix(self.tile_lines, self.tile_grids, spawn=True)
+        return self.hero_x, self.hero_y
 
     def filling_the_world(self):
         # тип шума и его настройки
         source = Exponent(Perlin(frequency=100, seed=self.seed), 1.25)
         # карта шума в виде одномерного массива
-        self.objects_line = noise_map_plane_gpu(width=self.width, height=self.height, lower_x=6,
+        self.object_lines = noise_map_plane_gpu(width=self.width, height=self.height, lower_x=6,
                                                 upper_x=18, lower_z=1, upper_z=5, source=source)
-        self.objects_grid = self.create_matrix(self.objects_line, self.objects_grid)
+        self.object_grids = self.create_matrix(self.object_lines, self.object_grids)
+
+    def download_save(self, save_number):
+        tile_girds_save = open(f"../saves/{save_number}/tile_positions", "r", encoding="utf8")
+        tile_positions = tile_girds_save.readlines()
+        tile_girds_save.close()
+        self.tile_grids = list(map(lambda y: list(map(numpy.float64, y[:-1].split())), tile_positions))
+
+        objects_gird_save = open(f"../saves/{save_number}/object_positions", "r", encoding="utf8")
+        object_positions = objects_gird_save.readlines()
+        objects_gird_save.close()
+        self.object_grids = list(map(lambda y: list(map(numpy.float64, y[:-1].split())), object_positions))
+
+        hero_position = open(f"../saves/{save_number}/hero_position", "r", encoding="utf8")
+        self.hero_x, self.hero_y, self.main_chunk_x, self.main_chunk_y = list(map(int, hero_position.read().split()))
+        hero_position.close()
 
     def draw(self, direction=None):
         tile_type = None
@@ -124,11 +142,12 @@ class World:
                 for y in range(self.chunk_size_y):
                     for x in range(self.chunk_size_x):
                         # значение тайла
-                        tile_num = self.world_grid[chunk_y * self.chunk_size_y + y][chunk_x * self.chunk_size_x + x]
+                        tile_num = self.tile_grids[chunk_y * self.chunk_size_y + y][chunk_x * self.chunk_size_x + x]
                         # значение объекта
-                        object_num = self.objects_grid[chunk_y * self.chunk_size_y + y][chunk_x * self.chunk_size_x + x]
+                        object_num = self.object_grids[chunk_y * self.chunk_size_y + y][chunk_x * self.chunk_size_x + x]
                         tile_groups = [self.sprite_groups.chunk_groups[index_x + index_y * 3]]
                         object_groups = [self.sprite_groups.object_groups[index_x + index_y * 3]]
+
                         if -1 <= tile_num < -0.2:
                             tile_type = "water.png"
                             tile_groups.append(self.sprite_groups.water_tile_groups[index_x + index_y * 3])
@@ -137,18 +156,22 @@ class World:
                             if 0.5 <= object_num:
                                 object_groups.append(
                                     self.sprite_groups.for_extraction_with_pickaxe_groups[index_x + index_y * 3])
-                                objects.Stone(object_groups, x, y)
+                                objects.Stone(object_groups, x, y,
+                                              chunk_x * self.chunk_size_x, chunk_y * self.chunk_size_y)
                         if tile_num == 0:
                             tile_type = "grass.png"
                             if 0.2 <= object_num < 0.5:
                                 object_groups.append(
                                     self.sprite_groups.for_extraction_with_axe_groups[index_x + index_y * 3])
-                                objects.Tree(object_groups, x, y)
+                                objects.Tree(object_groups, x, y,
+                                             chunk_x * self.chunk_size_x, chunk_y * self.chunk_size_y)
                             if 0.5 <= object_num:
                                 object_groups.append(
                                     self.sprite_groups.for_extraction_with_pickaxe_groups[index_x + index_y * 3])
-                                objects.Stone(object_groups, x, y)
-                        objects.Tile(tile_groups, tile_type, x, y)
+                                objects.Stone(object_groups, x, y,
+                                              chunk_x * self.chunk_size_x, chunk_y * self.chunk_size_y)
+                        objects.Tile(tile_groups, tile_type, x, y,
+                                     chunk_x * self.chunk_size_x, chunk_y * self.chunk_size_y)
 
     def make_map(self):
         # определение цветов для мини карты в плитре RGB
@@ -158,7 +181,7 @@ class World:
         gradient.add_gradient_point(0, Color(0, 0.75, 0))
         gradient.add_gradient_point(1, Color(0.5, 0.75, 1))
         render = RenderImage()
-        render.render(self.width, self.height, self.world_line, 'map.png', gradient)
+        render.render(self.width, self.height, self.tile_lines, 'map.png', gradient)
 
     # метод для применения настроек для отрисовки 3 экранов и обновления координат для центрального чанка
     # по направлению движения

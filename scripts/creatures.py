@@ -133,6 +133,8 @@ class Hero(pygame.sprite.Sprite):
             return nearest_sprite
         if self.what_is_in_hands == "pickaxe":
             sprite_groups = all_sprite_groups.for_extraction_with_pickaxe_groups
+        if self.what_is_in_hands == "axe":
+            sprite_groups = all_sprite_groups.for_extraction_with_axe_groups
         for chunk_y in range(3):
             for chunk_x in range(3):
                 for sprite in sprite_groups[chunk_x + chunk_y * 3]:

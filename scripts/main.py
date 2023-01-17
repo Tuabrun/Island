@@ -1,9 +1,10 @@
 import pygame
 from pygame.locals import *
+import os
 
 from file_directory import file_directory
 from load_image import load_image
-from cycles import game_cycle, show_menu
+from cycles import game_cycle, menu_cycle
 
 
 if __name__ == '__main__':
@@ -42,6 +43,10 @@ if __name__ == '__main__':
     while True:
         start_game = False
         if not start_game:
-            start_game = show_menu(screen)
+            start_game = menu_cycle(screen, click_sound)
         if start_game:
-            start_game = game_cycle(screen, width, height, step_sound)
+            os.chdir("..")
+            os.chdir("saves")
+            if os.listdir():
+                save_number = max(list(map(int, os.listdir())))
+                start_game = game_cycle(screen, width, height, save_number, step_sound)

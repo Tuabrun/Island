@@ -4,6 +4,7 @@ from pygame.locals import *
 from load_image import load_image
 from button import Button
 from world import World
+from save_game import save_game
 import creatures
 
 FPS = 60
@@ -66,30 +67,6 @@ class SpriteGroupsForChunks:
                 sprite_group[i].draw(chunks[i])
 
 
-def show_menu(screen):
-    menu_background = load_image('background.jpg')
-    start_button = Button(330, 60)
-    quit_button = Button(135, 60)
-    save_button = Button(400, 60)
-    running = True
-
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                quit()
-
-        screen.blit(menu_background, (0, 0))
-        running = start_button.draw(780, 340, 'START GAME', "change_cycle")
-        quit_button.draw(870, 565, 'QUIT', "quit")
-        save_button.draw(750, 450, 'UPLOAD A SAVE')
-
-        if not running:
-            return True
-
-        pygame.display.update()
-
-
 def update_chunks(direction, sprite_groups, camera, hero_pos, screen_size, world, chunks):
     offset = None
     saved_chunks = None
@@ -124,7 +101,34 @@ def update_chunks(direction, sprite_groups, camera, hero_pos, screen_size, world
     return sprite_groups, camera, hero_pos
 
 
-def game_cycle(screen, width, height, step_sound):
+def menu_cycle(screen, click_sound):
+    menu_background = load_image('background.jpg')
+    start_button = Button(270, 60)
+    save_button = Button(290, 60)
+    quit_button = Button(135, 60)
+
+    # ограничение списка проверяемых событий для лучшей производительности
+    pygame.event.set_allowed([QUIT])
+
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+
+        screen.blit(menu_background, (0, 0))
+        new_game = start_button.draw(screen, 810, 340, 'NEW GAME', click_sound, "new_world")
+        load_game = save_button.draw(screen, 800, 450, 'LOAD GAME', click_sound, "change_cycle")
+        quit_button.draw(screen, 870, 565, 'EXIT', click_sound, "quit")
+
+        if not new_game or not load_game:
+            return True
+
+        pygame.display.update()
+
+
+def game_cycle(screen, width, height, save_number, step_sound):
     sprite_groups = SpriteGroupsForChunks()
     hero_group = pygame.sprite.Group()
 
@@ -137,17 +141,14 @@ def game_cycle(screen, width, height, step_sound):
     clock = pygame.time.Clock()
     counter = -1
 
-    world = World(sprite_groups, 900, 450, 2, width, height)
-    # координаты персонажа В ЦЕНТРАЛЬНОМ ЧАНКЕ и создание мира
+    world = World(900, 450, 2, width, height, sprite_groups)
+    # координаты персонажа В ЦЕНТРАЛЬНОМ ЧАНКЕ
     # пояснение: в игре отрисовываются лишь 9 чанков, и в центральном чанке находится персонаж
     # как раз таки поэтому каждая группа спрайтов повторялатсь 9 раз. Каждой группе спрайтов соответствует свой чанк
-    hero_x, hero_y = world.create_world()
-    # создание объектов вроде камня
-    world.filling_the_world()
+    world.download_save(save_number)
+    hero_x, hero_y = world.hero_x, world.hero_y
     # присваивание тайлам и объектам соответствующие спрайты
     world.draw()
-    # создание карты
-    world.make_map()
 
     # создание чанков
     chunks = []
@@ -159,7 +160,6 @@ def game_cycle(screen, width, height, step_sound):
     sprite_groups.draw(chunks)
 
     hero = creatures.Hero(hero_group)
-    direction = RIGHT
     direction_x = direction_y = None
     sprite = target_x = target_y = None
 
@@ -188,11 +188,14 @@ def game_cycle(screen, width, height, step_sound):
         for event in pygame.event.get():
             # нажатие крестика в правом верхнем углу
             if event.type == pygame.QUIT:
+                save_game(save_number, world, hero_x, hero_y)
                 running = False
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
+                    save_game(save_number, world, hero_x, hero_y)
                     return False
+
                 if event.key == pygame.K_d:
                     motion_x = direction_x = RIGHT
                 if event.key == pygame.K_a:
@@ -202,9 +205,16 @@ def game_cycle(screen, width, height, step_sound):
                 if event.key == pygame.K_s:
                     motion_y = direction_y = DOWN
 
+                if event.key == pygame.K_1:
+                    hero.what_is_in_hands = "axe"
+                if event.key == pygame.K_2:
+                    hero.what_is_in_hands = "pickaxe"
+
                 if event.key == pygame.K_f:
                     sprite_inf = hero.find_nearest_sprite(sprite_groups, hero_x, hero_y, width, height)
                     sprite, target_x, target_y = sprite_inf
+                    if sprite is None:
+                        sprite = target_x = target_y = None
 
                 if event.key == pygame.K_LEFT:
                     if vol > 0.0:
@@ -270,13 +280,23 @@ def game_cycle(screen, width, height, step_sound):
             direction = direction_y
         else:
             direction = direction_x
+
         if sprite is not None and sprite.check_collision(hero_group, width, height):
-            action = "mine"
+            if hero.what_is_in_hands == "pickaxe":
+                action = "mine"
+            if hero.what_is_in_hands == "axe":
+                action = "cut_down"
             direction = direction_x
-            if counter in [31, 63, 95]:
-                sprite.update()
+            if counter in [31, 63, 95] and action != "cut_down":
+                world.object_grids, is_destroyed = sprite.update(world.object_grids)
+                if is_destroyed:
+                    sprite_inf = hero.find_nearest_sprite(sprite_groups, hero_x, hero_y, width, height)
+                    sprite, target_x, target_y = sprite_inf
+                    if sprite is None:
+                        sprite = target_x = target_y = None
                 sprite_groups.draw(chunks)
-        if motion_y is None and motion_x is None:
+
+        if motion_y is None and motion_x is None and action == "run":
             frame_number = 0
         hero.update(action, direction, frame_number)
 

@@ -6,10 +6,12 @@ TILE_WIDTH = TILE_HEIGHT = 96
 
 
 class Object(pygame.sprite.Sprite):
-    def __init__(self, groups, type, pos_x, pos_y, alpha, colums, rows, number_of_strokes):
+    def __init__(self, groups, type, pos_x, pos_y, chunk_pos_x, chunk_pos_y, alpha, colums, rows, number_of_strokes):
         super().__init__(*groups)
         self.pos_x = pos_x
         self.pos_y = pos_y
+        self.chunk_pos_x = chunk_pos_x
+        self.chunk_pos_y = chunk_pos_y
 
         self.frames = []
         self.hit_points = 0
@@ -31,12 +33,16 @@ class Object(pygame.sprite.Sprite):
                 self.frames.append(sheet.subsurface(pygame.Rect(
                     frame_location, self.rect.size)))
 
-    def update(self):
+    def update(self, object_girds):
         self.hit_points += 1
+        is_destroyed = False
         if self.hit_points > self.number_of_strokes:
+            object_girds[self.chunk_pos_y + self.pos_y][self.chunk_pos_x + self.pos_x] = -1
+            is_destroyed = True
             self.kill()
         else:
             self.image = self.frames[self.hit_points]
+        return object_girds, is_destroyed
 
     def check_collision(self, sprite_group, width, height):
         chunk_size_x = width // TILE_WIDTH
@@ -79,15 +85,15 @@ class Object(pygame.sprite.Sprite):
 
 
 class Tile(Object):
-    def __init__(self, tile_group, tile_type, pos_x, pos_y):
-        super().__init__(tile_group, tile_type, pos_x, pos_y, False, 1, 1, 1)
+    def __init__(self, tile_group, tile_type, pos_x, pos_y, chunk_x, chunk_y):
+        super().__init__(tile_group, tile_type, pos_x, pos_y, chunk_x, chunk_y, False, 1, 1, 1)
 
 
 class Tree(Object):
-    def __init__(self, object_group, pos_x, pos_y):
-        super().__init__(object_group, "tree.png", pos_x, pos_y, True, 1, 1, 1)
+    def __init__(self, object_group, pos_x, pos_y, chunk_x, chunk_y):
+        super().__init__(object_group, "tree.png", pos_x, pos_y, chunk_x, chunk_y, True, 1, 1, 1)
 
 
 class Stone(Object):
-    def __init__(self, object_group, pos_x, pos_y):
-        super().__init__(object_group, "stone.png", pos_x, pos_y, True, 6, 1, 5)
+    def __init__(self, object_group, pos_x, pos_y, chunk_x, chunk_y):
+        super().__init__(object_group, "stone.png", pos_x, pos_y, chunk_x, chunk_y, True, 6, 1, 5)
