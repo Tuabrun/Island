@@ -6,6 +6,9 @@ from button import Button
 from world import World
 from save_game import save_game
 import creatures
+from inventory import HotBar
+from inventory import InventoryItem
+
 
 FPS = 60
 SPEED = 3
@@ -131,6 +134,12 @@ def menu_cycle(screen, click_sound):
 def game_cycle(screen, width, height, save_number, step_sound):
     sprite_groups = SpriteGroupsForChunks()
     hero_group = pygame.sprite.Group()
+    interface_group = pygame.sprite.Group()
+    item_group = pygame.sprite.Group()
+
+    info_object = pygame.display.Info()
+    true_width = info_object.current_w
+    true_height = info_object.current_h
 
     step_counter = 0
     vol = 0.1
@@ -158,6 +167,9 @@ def game_cycle(screen, width, height, save_number, step_sound):
         chunks.append(chunk)
     # отрисовка спрайтов на этих чанках
     sprite_groups.draw(chunks)
+
+    hot_bar = HotBar(interface_group, true_width, true_height)
+    initialization_items(interface_group, item_group, hot_bar)
 
     hero = creatures.Hero(hero_group)
     direction_x = direction_y = None
@@ -290,6 +302,7 @@ def game_cycle(screen, width, height, save_number, step_sound):
             if counter in [31, 63, 95] and action != "cut_down":
                 world.object_grids, is_destroyed = sprite.update(world.object_grids)
                 if is_destroyed:
+                    hero.update_inventory(sprite.type)
                     sprite_inf = hero.find_nearest_sprite(sprite_groups, hero_x, hero_y, width, height)
                     sprite, target_x, target_y = sprite_inf
                     if sprite is None:
@@ -325,6 +338,10 @@ def game_cycle(screen, width, height, save_number, step_sound):
             for index_y in range(3):
                 screen.blit(chunks[index_x + 3 * index_y], (camera_x + width * index_x, camera_y + height * index_y))
         screen.blit(hero.get_image(), (width // 2, height // 2))
+        interface_group.draw(screen)
+        for item in item_group:
+            item.draw(screen, hot_bar.cell_x, hot_bar.cell_y)
         pygame.display.flip()
         clock.tick(FPS)
+
     pygame.quit()

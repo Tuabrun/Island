@@ -8,6 +8,7 @@ RIGHT = "right"
 LEFT = "left"
 UP = "up"
 DOWN = "down"
+STACK = 32
 
 
 class Hero(pygame.sprite.Sprite):
@@ -15,11 +16,24 @@ class Hero(pygame.sprite.Sprite):
         super().__init__(hero_group)
         self.frames = []
         self.what_is_in_hands = "pickaxe"
+        self.inventory = [[None, 0], [None, 0], [None, 0], [None, 0]]
         self.cut_sheet(load_image("hero.png", alpha=True), 9, 4)
         self.update("run", RIGHT, 0)
 
     def get_image(self):
         return self.image
+
+    def update_inventory(self, item):
+        cell_number = 0
+        free_cells = False
+        while cell_number <= 4:
+            if (self.inventory[cell_number][0] is not None or self.inventory[cell_number][0] == item)\
+                    and self.inventory[cell_number][1] < 32:
+                free_cells = True
+                break
+            cell_number += 1
+        if free_cells:
+            self.inventory[cell_number] = [self.inventory[cell_number][0], self.inventory[cell_number][1] + 1]
 
     def make_stop(self, sprite_group, direction_x, direction_y, hero_x, hero_y, stop_motion):
         hero_tile_x = hero_x // TILE_WIDTH

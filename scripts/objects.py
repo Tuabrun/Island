@@ -1,5 +1,7 @@
 import pygame
 
+from file_directory import file_directory
+from print_text import print_text
 from load_image import load_image
 
 TILE_WIDTH = TILE_HEIGHT = 96
@@ -8,6 +10,7 @@ TILE_WIDTH = TILE_HEIGHT = 96
 class Object(pygame.sprite.Sprite):
     def __init__(self, groups, type, pos_x, pos_y, chunk_pos_x, chunk_pos_y, alpha, colums, rows, number_of_strokes):
         super().__init__(*groups)
+        self.type = type
         self.pos_x = pos_x
         self.pos_y = pos_y
         self.chunk_pos_x = chunk_pos_x
@@ -82,6 +85,16 @@ class Object(pygame.sprite.Sprite):
             if collision:
                 return True
         return False
+
+
+class InventoryItem(Object):
+    def __init__(self, item_groups, item_type, pos_x, pos_y, chunk_pos_x=None, chunk_pos_y=None):
+        super().__init__(*item_groups, item_type, pos_x, pos_y, chunk_pos_x, chunk_pos_y, True, 1, 1, 1)
+        self.rect = self.image.get_rect(center=(pos_x, pos_y))
+
+    def draw(self, screen, pos_x, pos_y, amount):
+        print_text(amount, pos_x, pos_y + 12, screen, (0, 0, 0),
+                   file_directory("fonts", "text.ttf"), font_size=7)
 
 
 class Tile(Object):

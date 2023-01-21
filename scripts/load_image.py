@@ -3,6 +3,7 @@ import pygame
 
 def load_image(name, alpha=None, direction=None):  # функция для загрузки картинки
     fullname = open("../data/images/" + name, mode="rb").name
+    screen = pygame.display
 
     # добавить сценарий отсутствия картинки!!!!!
 
