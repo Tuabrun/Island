@@ -180,7 +180,31 @@ def game_cycle(screen, width, height, save_number, step_sound):
 
     running = True
 
+    stones = 0
     while running:
+        if stones == 81:
+            sprite_groups, camera_x, hero_x = update_chunks(LEFT, sprite_groups, camera_x,
+                                                            hero_x, width, world, chunks)
+            sprite_groups, camera_x, hero_x = update_chunks(LEFT, sprite_groups, camera_x,
+                                                            hero_x, width, world, chunks)
+            sprite_groups, camera_x, hero_x = update_chunks(LEFT, sprite_groups, camera_x,
+                                                            hero_x, width, world, chunks)
+            sprite_groups, camera_x, hero_x = update_chunks(LEFT, sprite_groups, camera_x,
+                                                            hero_x, width, world, chunks)
+            sprite_groups, camera_y, hero_y = update_chunks(UP, sprite_groups, camera_y,
+                                                            hero_y, height, world, chunks)
+            sprite_groups, camera_y, hero_y = update_chunks(UP, sprite_groups, camera_y,
+                                                            hero_y, height, world, chunks)
+            sprite_groups, camera_y, hero_y = update_chunks(UP, sprite_groups, camera_y,
+                                                            hero_y, height, world, chunks)
+            sprite_groups, camera_y, hero_y = update_chunks(UP, sprite_groups, camera_y,
+                                                            hero_y, height, world, chunks)
+            # тут должен быть игровой цикл экрана с предложением перейти на следующий LVL
+            stones += 1
+
+        if stones == 101:
+            # тут должен быть игровой цикл экрана с подсчётом результата на несколько секунд
+
         counter = (counter + 1) % 96
         frame_number = counter // 4 + 1
 
@@ -300,6 +324,7 @@ def game_cycle(screen, width, height, save_number, step_sound):
             if counter in [31, 63, 95] and action != "cut_down":
                 world.object_grids, is_destroyed = sprite.update(world.object_grids)
                 if is_destroyed:
+                    stones += 1
                     hero.update_inventory(item_group, hot_bar, sprite.type)
                     sprite_inf = hero.find_nearest_sprite(sprite_groups, hero_x, hero_y, width, height)
                     sprite, target_x, target_y = sprite_inf
