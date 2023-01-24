@@ -20,7 +20,7 @@ class Button:
             is_click = True
         else:
             pygame.draw.rect(screen, self.inactive_color, (x, y, self.width, self.height))
-        print_text(message, x + 10, y + 10, screen, font_size)
+        print_text(screen, x + 10, y + 10, message, font_size)
 
         if is_click:
             if click[0] == 1:

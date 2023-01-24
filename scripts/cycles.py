@@ -7,7 +7,6 @@ from world import World
 from save_game import save_game
 import creatures
 from inventory import HotBar
-from inventory import InventoryItem
 
 
 FPS = 60
@@ -169,7 +168,6 @@ def game_cycle(screen, width, height, save_number, step_sound):
     sprite_groups.draw(chunks)
 
     hot_bar = HotBar(interface_group, true_width, true_height)
-    initialization_items(interface_group, item_group, hot_bar)
 
     hero = creatures.Hero(hero_group)
     direction_x = direction_y = None
@@ -302,7 +300,7 @@ def game_cycle(screen, width, height, save_number, step_sound):
             if counter in [31, 63, 95] and action != "cut_down":
                 world.object_grids, is_destroyed = sprite.update(world.object_grids)
                 if is_destroyed:
-                    hero.update_inventory(sprite.type)
+                    hero.update_inventory(item_group, hot_bar, sprite.type)
                     sprite_inf = hero.find_nearest_sprite(sprite_groups, hero_x, hero_y, width, height)
                     sprite, target_x, target_y = sprite_inf
                     if sprite is None:
@@ -314,11 +312,11 @@ def game_cycle(screen, width, height, save_number, step_sound):
         hero.update(action, direction, frame_number)
 
         # дальше идут 4 похожих блока пока, поэтому поясю за все сразу
-        # если центральный чанк полностью ущёл за границы экрана (тоесть координаты его верхнего левого угла
-        # либо меньше размера экрана по x или по y, либо больше 0), то первые 3 чанка по направлению движения
-        # камеры полностью обновляют свои группы спрайтов, а остальные 6 чанков меняют свои группы спрайтов
-        # на группу спрайтов соседа по направлению движения камеры. Соответственно меняется и главный чанк по
-        # направлению движения камеры. В конце все группы спрайтов отрисовываюся на своих чанках, а положение
+        # если левый верхний чанк полностью ущёл за границы экрана (то-есть координаты его верхнего левого угла
+        # либо меньше отрицательного размера экрана по x или по y, либо больше 0), то первые 3 чанка по
+        # направлению движения камеры полностью обновляют свои группы спрайтов, а остальные 6 чанков меняют свои
+        # группы спрайтов на группу спрайтов соседа по направлению движения камеры. Соответственно меняется и главный
+        # чанк по направлению движения камеры. В конце все группы спрайтов отрисовываюся на своих чанках, а положение
         # камеры смещается к персонажу на главном чанке
         if camera_x + width // 2 <= -width:
             sprite_groups, camera_x, hero_x = update_chunks(RIGHT, sprite_groups, camera_x,
@@ -337,10 +335,11 @@ def game_cycle(screen, width, height, save_number, step_sound):
         for index_x in range(3):
             for index_y in range(3):
                 screen.blit(chunks[index_x + 3 * index_y], (camera_x + width * index_x, camera_y + height * index_y))
-        screen.blit(hero.get_image(), (width // 2, height // 2))
+        screen.blit(hero.image, (width // 2, height // 2))
         interface_group.draw(screen)
+        item_group.draw(screen)
         for item in item_group:
-            item.draw(screen, hot_bar.cell_x, hot_bar.cell_y)
+            item.draw_amount(screen, item.pos_x, item.pos_y)
         pygame.display.flip()
         clock.tick(FPS)
 

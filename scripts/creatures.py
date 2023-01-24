@@ -1,6 +1,7 @@
 import pygame
 
 from load_image import load_image
+import objects
 
 TILE_WIDTH = TILE_HEIGHT = 96
 SPEED = 3
@@ -11,29 +12,39 @@ DOWN = "down"
 STACK = 32
 
 
+class EmptyCell:
+    def __init__(self):
+        self.type = None
+        self.amount = 0
+
+
 class Hero(pygame.sprite.Sprite):
     def __init__(self, hero_group):
         super().__init__(hero_group)
         self.frames = []
         self.what_is_in_hands = "pickaxe"
-        self.inventory = [[None, 0], [None, 0], [None, 0], [None, 0]]
+        self.inventory = [EmptyCell(), EmptyCell(), EmptyCell(), EmptyCell()]
         self.cut_sheet(load_image("hero.png", alpha=True), 9, 4)
         self.update("run", RIGHT, 0)
 
-    def get_image(self):
-        return self.image
-
-    def update_inventory(self, item):
+    def update_inventory(self, item_groups, hot_bar, item):
         cell_number = 0
-        free_cells = False
-        while cell_number <= 4:
-            if (self.inventory[cell_number][0] is not None or self.inventory[cell_number][0] == item)\
-                    and self.inventory[cell_number][1] < 32:
-                free_cells = True
+        free_cell = False
+        add_item = False
+        while cell_number < 4:
+            if self.inventory[cell_number].type == item and self.inventory[cell_number].amount < STACK:
+                add_item = True
+                break
+            if self.inventory[cell_number].type is None:
+                free_cell = True
                 break
             cell_number += 1
-        if free_cells:
-            self.inventory[cell_number] = [self.inventory[cell_number][0], self.inventory[cell_number][1] + 1]
+        if free_cell:
+            if item == "stone.png":
+                item = objects.Stone([item_groups], hot_bar.cell_x + 64 * cell_number, hot_bar.cell_y)
+            self.inventory[cell_number] = item
+        if free_cell or add_item:
+            self.inventory[cell_number].amount += 1
 
     def make_stop(self, sprite_group, direction_x, direction_y, hero_x, hero_y, stop_motion):
         hero_tile_x = hero_x // TILE_WIDTH

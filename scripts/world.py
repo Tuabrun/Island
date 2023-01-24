@@ -156,8 +156,8 @@ class World:
                             if 0.5 <= object_num:
                                 object_groups.append(
                                     self.sprite_groups.for_extraction_with_pickaxe_groups[index_x + index_y * 3])
-                                objects.Stone(object_groups, x, y,
-                                              chunk_x * self.chunk_size_x, chunk_y * self.chunk_size_y)
+                                objects.Boulder(object_groups, x, y,
+                                                chunk_x * self.chunk_size_x, chunk_y * self.chunk_size_y)
                         if tile_num == 0:
                             tile_type = "grass.png"
                             if 0.2 <= object_num < 0.5:
@@ -168,8 +168,8 @@ class World:
                             if 0.5 <= object_num:
                                 object_groups.append(
                                     self.sprite_groups.for_extraction_with_pickaxe_groups[index_x + index_y * 3])
-                                objects.Stone(object_groups, x, y,
-                                              chunk_x * self.chunk_size_x, chunk_y * self.chunk_size_y)
+                                objects.Boulder(object_groups, x, y,
+                                                chunk_x * self.chunk_size_x, chunk_y * self.chunk_size_y)
                         objects.Tile(tile_groups, tile_type, x, y,
                                      chunk_x * self.chunk_size_x, chunk_y * self.chunk_size_y)
 

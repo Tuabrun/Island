@@ -27,6 +27,10 @@ class Object(pygame.sprite.Sprite):
         pos = (self.pos_x, self.pos_y)
         return pos
 
+    def update_chunk_pos(self, chunk_pos_x, chunk_pos_y):
+        self.chunk_pos_x = chunk_pos_x
+        self.chunk_pos_y = chunk_pos_y
+
     def cut_sheet(self, sheet, columns, rows):
         self.rect = pygame.Rect(0, 0, sheet.get_width() // columns,
                                 sheet.get_height() // rows)
@@ -89,24 +93,38 @@ class Object(pygame.sprite.Sprite):
 
 class InventoryItem(Object):
     def __init__(self, item_groups, item_type, pos_x, pos_y, chunk_pos_x=None, chunk_pos_y=None):
-        super().__init__(*item_groups, item_type, pos_x, pos_y, chunk_pos_x, chunk_pos_y, True, 1, 1, 1)
+        super().__init__(item_groups, item_type, pos_x, pos_y, chunk_pos_x, chunk_pos_y, True, 1, 1, 1)
+        self.amount = 0
         self.rect = self.image.get_rect(center=(pos_x, pos_y))
 
-    def draw(self, screen, pos_x, pos_y, amount):
-        print_text(amount, pos_x, pos_y + 12, screen, (0, 0, 0),
-                   file_directory("fonts", "text.ttf"), font_size=7)
+    def update_chunk_pos(self, chunk_pos_x, chunk_pos_y):
+        self.chunk_pos_x = chunk_pos_x
+        self.chunk_pos_y = chunk_pos_y
+
+    def update_pos(self, pos_x, pos_y):
+        self.pos_x = pos_x
+        self.pos_y = pos_y
+
+    def draw_amount(self, screen, pos_x, pos_y):
+        print_text(screen, pos_x, pos_y + 12, f"x{self.amount}", (0, 0, 0), font_size=7)
 
 
 class Tile(Object):
-    def __init__(self, tile_group, tile_type, pos_x, pos_y, chunk_x, chunk_y):
-        super().__init__(tile_group, tile_type, pos_x, pos_y, chunk_x, chunk_y, False, 1, 1, 1)
+    def __init__(self, tile_groups, tile_type, pos_x, pos_y, chunk_x, chunk_y):
+        super().__init__(tile_groups, tile_type, pos_x, pos_y, chunk_x, chunk_y, False, 1, 1, 1)
 
 
 class Tree(Object):
-    def __init__(self, object_group, pos_x, pos_y, chunk_x, chunk_y):
-        super().__init__(object_group, "tree.png", pos_x, pos_y, chunk_x, chunk_y, True, 1, 1, 1)
+    def __init__(self, object_groups, pos_x, pos_y, chunk_x, chunk_y):
+        super().__init__(object_groups, "tree.png", pos_x, pos_y, chunk_x, chunk_y, True, 1, 1, 1)
 
 
-class Stone(Object):
-    def __init__(self, object_group, pos_x, pos_y, chunk_x, chunk_y):
-        super().__init__(object_group, "stone.png", pos_x, pos_y, chunk_x, chunk_y, True, 6, 1, 5)
+class Boulder(Object):
+    def __init__(self, object_groups, pos_x, pos_y, chunk_x, chunk_y):
+        super().__init__(object_groups, "stone.png", pos_x, pos_y, chunk_x, chunk_y, True, 6, 1, 5)
+
+
+class Stone(InventoryItem):
+    def __init__(self, item_groups, pos_x, pos_y):
+        super().__init__(item_groups, "inventory_stone.png", pos_x, pos_y)
+        self.type = "stone.png"
