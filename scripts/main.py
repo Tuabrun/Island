@@ -9,12 +9,6 @@ from cycles import game_cycle, menu_cycle
 
 if __name__ == '__main__':
     TILE_WIDTH = TILE_HEIGHT = 96
-    FPS = 60
-    SPEED = 3
-    RIGHT = "right"
-    LEFT = "left"
-    UP = "up"
-    DOWN = "down"
 
     pygame.init()
 

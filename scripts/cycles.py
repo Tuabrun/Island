@@ -7,7 +7,9 @@ from world import World
 from save_game import save_game
 import creatures
 from inventory import HotBar
-
+from inventory import FinishWindow
+from file_directory import file_directory
+from print_text import print_text
 
 FPS = 60
 SPEED = 3
@@ -130,11 +132,59 @@ def menu_cycle(screen, click_sound):
         pygame.display.update()
 
 
+def game_finish_cycle(screen, true_width, true_height, window_group, stones):
+    click_sound = pygame.mixer.Sound(file_directory("sounds", "click.wav"))
+    menu_background = FinishWindow(window_group, true_width, true_height)
+    click_sound.play()
+    ok_button = Button(85, 55)
+
+    pygame.event.set_allowed([QUIT])
+
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+        screen.blit(menu_background.image, (true_width // 2 - 312, true_height // 2 - 256))
+        print_text(screen, true_width // 2 - 256, true_height // 2 - 64, f"you have collected {stones} stones",
+                   font_size=20)
+        finish = ok_button.draw(screen, true_width // 2 - 43, true_height // 2 + 128, 'OK', click_sound, "change_cycle")
+        if not finish:
+            return finish
+        pygame.display.update()
+
+
+def next_level_cycle(screen, true_width, true_height, window_group):
+    click_sound = pygame.mixer.Sound(file_directory("sounds", "click.wav"))
+    background = load_image('background.jpg')
+    menu_background = FinishWindow(window_group, true_width, true_height)
+    click_sound.play()
+    ok_button = Button(85, 55)
+
+    pygame.event.set_allowed([QUIT])
+
+    running = True
+    while running:
+        screen.blit(background, (0, 0))
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+        window_group.draw(screen)
+        print_text(screen, true_width // 2 - 256, true_height // 2 - 64, "go to the next level?", font_size=25)
+        finish = ok_button.draw(screen, true_width // 2 - 43, true_height // 2 + 128, 'OK', click_sound, "change_cycle")
+        if not finish:
+            running = False
+        pygame.display.update()
+
+
 def game_cycle(screen, width, height, save_number, step_sound):
     sprite_groups = SpriteGroupsForChunks()
     hero_group = pygame.sprite.Group()
     interface_group = pygame.sprite.Group()
     item_group = pygame.sprite.Group()
+    window_group = pygame.sprite.Group()
 
     info_object = pygame.display.Info()
     true_width = info_object.current_w
@@ -180,7 +230,35 @@ def game_cycle(screen, width, height, save_number, step_sound):
 
     running = True
 
+    stones = 0
+    flag = True
     while running:
+        if stones == 3 and flag:
+            sprite_groups, camera_x, hero_x = update_chunks(LEFT, sprite_groups, camera_x,
+                                                            hero_x, width, world, chunks)
+            sprite_groups, camera_x, hero_x = update_chunks(LEFT, sprite_groups, camera_x,
+                                                            hero_x, width, world, chunks)
+            sprite_groups, camera_x, hero_x = update_chunks(LEFT, sprite_groups, camera_x,
+                                                            hero_x, width, world, chunks)
+            sprite_groups, camera_x, hero_x = update_chunks(LEFT, sprite_groups, camera_x,
+                                                            hero_x, width, world, chunks)
+            sprite_groups, camera_y, hero_y = update_chunks(UP, sprite_groups, camera_y,
+                                                            hero_y, height, world, chunks)
+            sprite_groups, camera_y, hero_y = update_chunks(UP, sprite_groups, camera_y,
+                                                            hero_y, height, world, chunks)
+            sprite_groups, camera_y, hero_y = update_chunks(UP, sprite_groups, camera_y,
+                                                            hero_y, height, world, chunks)
+            sprite_groups, camera_y, hero_y = update_chunks(UP, sprite_groups, camera_y,
+                                                            hero_y, height, world, chunks)
+            next_level_cycle(screen, true_width, true_height, window_group)
+            target_x = target_y = motion_x = motion_y = None
+            hero.update("run", RIGHT, 0)
+            flag = False
+
+        if stones == 5:
+            finish = game_finish_cycle(screen, true_width, true_height, interface_group, stones)
+            if not finish:
+                return False
         counter = (counter + 1) % 96
         frame_number = counter // 4 + 1
 
@@ -204,6 +282,7 @@ def game_cycle(screen, width, height, save_number, step_sound):
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     save_game(save_number, world, hero_x, hero_y)
+                    game_finish_cycle(screen, true_width, true_height, interface_group, stones)
                     return False
 
                 if event.key == pygame.K_d:
@@ -300,6 +379,7 @@ def game_cycle(screen, width, height, save_number, step_sound):
             if counter in [31, 63, 95] and action != "cut_down":
                 world.object_grids, is_destroyed = sprite.update(world.object_grids)
                 if is_destroyed:
+                    stones += 1
                     hero.update_inventory(item_group, hot_bar, sprite.type)
                     sprite_inf = hero.find_nearest_sprite(sprite_groups, hero_x, hero_y, width, height)
                     sprite, target_x, target_y = sprite_inf
@@ -342,5 +422,5 @@ def game_cycle(screen, width, height, save_number, step_sound):
             item.draw_amount(screen, item.pos_x, item.pos_y)
         pygame.display.flip()
         clock.tick(FPS)
-
+        print(target_x, target_y)
     pygame.quit()
