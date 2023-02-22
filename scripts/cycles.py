@@ -7,7 +7,9 @@ from world import World
 from save_game import save_game
 import creatures
 from inventory import HotBar
-
+from inventory import PopUpWindow
+from file_directory import file_directory
+from print_text import print_text
 
 FPS = 60
 SPEED = 3
@@ -116,7 +118,6 @@ def menu_cycle(screen, click_sound):
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
                 quit()
 
         screen.blit(menu_background, (0, 0))
@@ -127,6 +128,28 @@ def menu_cycle(screen, click_sound):
         if not new_game or not load_game:
             return True
 
+        pygame.display.update()
+
+
+def game_finish_cycle(screen, true_width, true_height, window_group, stones):
+    click_sound = pygame.mixer.Sound(file_directory("data/sounds/click.wav"))
+    menu_background = PopUpWindow(window_group, true_width, true_height)
+    click_sound.play()
+    ok_button = Button(85, 55)
+
+    pygame.event.set_allowed([QUIT])
+
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                quit()
+        screen.blit(menu_background.image, (true_width // 2 - 312, true_height // 2 - 256))
+        print_text(screen, true_width // 2 - 256, true_height // 2 - 64, f"you have collected {stones} stones",
+                   font_size=20)
+        finish = ok_button.draw(screen, true_width // 2 - 43, true_height // 2 + 128, 'OK', click_sound, "change_cycle")
+        if not finish:
+            return finish
         pygame.display.update()
 
 
@@ -153,7 +176,7 @@ def game_cycle(screen, width, height, save_number, step_sound):
     # координаты персонажа В ЦЕНТРАЛЬНОМ ЧАНКЕ
     # пояснение: в игре отрисовываются лишь 9 чанков, и в центральном чанке находится персонаж
     # как раз таки поэтому каждая группа спрайтов повторялатсь 9 раз. Каждой группе спрайтов соответствует свой чанк
-    world.download_save(save_number)
+    world.load_save(save_number)
     hero_x, hero_y = world.hero_x, world.hero_y
     # присваивание тайлам и объектам соответствующие спрайты
     world.draw()
@@ -179,32 +202,8 @@ def game_cycle(screen, width, height, save_number, step_sound):
     motion_x = motion_y = None
 
     running = True
-
     stones = 0
     while running:
-        if stones == 81:
-            sprite_groups, camera_x, hero_x = update_chunks(LEFT, sprite_groups, camera_x,
-                                                            hero_x, width, world, chunks)
-            sprite_groups, camera_x, hero_x = update_chunks(LEFT, sprite_groups, camera_x,
-                                                            hero_x, width, world, chunks)
-            sprite_groups, camera_x, hero_x = update_chunks(LEFT, sprite_groups, camera_x,
-                                                            hero_x, width, world, chunks)
-            sprite_groups, camera_x, hero_x = update_chunks(LEFT, sprite_groups, camera_x,
-                                                            hero_x, width, world, chunks)
-            sprite_groups, camera_y, hero_y = update_chunks(UP, sprite_groups, camera_y,
-                                                            hero_y, height, world, chunks)
-            sprite_groups, camera_y, hero_y = update_chunks(UP, sprite_groups, camera_y,
-                                                            hero_y, height, world, chunks)
-            sprite_groups, camera_y, hero_y = update_chunks(UP, sprite_groups, camera_y,
-                                                            hero_y, height, world, chunks)
-            sprite_groups, camera_y, hero_y = update_chunks(UP, sprite_groups, camera_y,
-                                                            hero_y, height, world, chunks)
-            # тут должен быть игровой цикл экрана с предложением перейти на следующий LVL
-            stones += 1
-
-        if stones == 101:
-            # тут должен быть игровой цикл экрана с подсчётом результата на несколько секунд
-
         counter = (counter + 1) % 96
         frame_number = counter // 4 + 1
 
@@ -228,6 +227,7 @@ def game_cycle(screen, width, height, save_number, step_sound):
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     save_game(save_number, world, hero_x, hero_y)
+                    game_finish_cycle(screen, true_width, true_height, interface_group, stones)
                     return False
 
                 if event.key == pygame.K_d:
@@ -367,5 +367,3 @@ def game_cycle(screen, width, height, save_number, step_sound):
             item.draw_amount(screen, item.pos_x, item.pos_y)
         pygame.display.flip()
         clock.tick(FPS)
-
-    pygame.quit()
