@@ -12,6 +12,10 @@ RIGHT = "right"
 LEFT = "left"
 UP = "up"
 DOWN = "down"
+RIGHT_UP = "right_up"
+RIGHT_DOWN = "right_down"
+LEFT_UP = "left_up"
+LEFT_DOWN = "left_down"
 
 
 # класс для создания мира, наполнения его объктами, присвоения значениям соответствующих спрайтов, загрузки сохранеия
@@ -169,61 +173,70 @@ class World:
         # чтение файла с сохранением координат персонажа внутри чанка и координат чанка, в котором находится персонаж
         hero_position = open(f"../saves/{save_number}/hero_position", "r", encoding="utf8")
         # присвоение этих значений соответствующим переменным
-        self.hero_x, self.hero_y, self.main_chunk_x, self.main_chunk_y, self.build\
-            = list(map(int, hero_position.read().split()))
+        self.hero_x, self.hero_y, self.main_chunk_x, self.main_chunk_y = list(map(int, hero_position.read().split()))
         # закрытие файла
         hero_position.close()
 
-    def draw(self, direction=None):
+    def draw(self, direction=None, piece=(0, 1)):
         tile_type = None
         # координаты левого верхнего чанка, где единичный отрезок - это размеры чанка
-        start_x = self.main_chunk_x - 1
-        start_y = self.main_chunk_y - 1
+        start_chunk_x = self.main_chunk_x - 1
+        start_chunk_y = self.main_chunk_y - 1
 
-        # координаты правого нижнего чанка, где единичный отрезок - это размеры чанка
-        final_x = start_x + 3
-        final_y = start_y + 3
+        start_x = 0
+        start_y = self.chunk_size_y * piece[0]
 
-        # числа, необходимые для вычисления группы спрайтов. Так как по ходу циклов ниже index_y меняется всего 3 раза,
-        # то для него не нужно создавать отдельную переменную, потому что чанков всего 9, соответственно групп спрайтов
-        # тоже всего 9. Это можно представить, как квадрат 3 * 3, где 3 столбца соответстсвуют координате x, и 3 строки
-        # соответстсвующие координате y. А вот для index_x нужно создать переменную, которая будет хранить начальное
-        # значение, иначе по ходу циклов она измениться 9 раз вместо 3. То-есть при завершении 2 цикла переменной
-        # index_x опяь будет передано начальное значение равное start_index_x
-        start_index_x = -1
-        index_y = -1
+        final_x = self.chunk_size_x
+        final_y = self.chunk_size_y * piece[1]
 
-        # настройка для отрисовка лишь 3 чанков по направлении движения камеры. В зависимости от того, куда пойдёт
-        # персонаж либо стартовое значение станет равным финальному и из него вычтетсья 1 для x или для y,
-        # либо финальное значение станет равное начальному и прибавиться 1 для x или для y. Вычитание и прибавление 1
-        # необходимо для корректной работы цикла
+        chunks_x = [start_chunk_x, start_chunk_x + 1, start_chunk_x + 2]
+        chunks_y = [start_chunk_y, start_chunk_y + 1, start_chunk_y + 2]
+
         if direction == RIGHT:
-            start_x = final_x
-            start_x -= 1
-            start_index_x = 1
+            chunks_x = [start_chunk_x + 2]
+            chunks_y = [start_chunk_y + 1]
+            start_x = self.chunk_size_x * piece[0]
+            start_y = 0
+            final_x = self.chunk_size_x * piece[1]
+            final_y = self.chunk_size_y
         if direction == LEFT:
-            final_x = start_x
-            final_x += 1
+            chunks_x = [start_chunk_x]
+            chunks_y = [start_chunk_y + 1]
+            start_x = self.chunk_size_x * piece[0]
+            start_y = 0
+            final_x = self.chunk_size_x * piece[1]
+            final_y = self.chunk_size_y
         if direction == UP:
-            final_y = start_y
-            final_y += 1
+            chunks_x = [start_chunk_x + 1]
+            chunks_y = [start_chunk_y]
         if direction == DOWN:
-            start_y = final_y
-            start_y -= 1
-            index_y = 1
+            chunks_x = [start_chunk_x + 1]
+            chunks_y = [start_chunk_y + 2]
+
+        if direction == RIGHT_UP:
+            chunks_x = [start_chunk_x + 2]
+            chunks_y = [start_chunk_y]
+        if direction == RIGHT_DOWN:
+            chunks_x = [start_chunk_x + 2]
+            chunks_y = [start_chunk_y + 2]
+        if direction == LEFT_UP:
+            chunks_x = [start_chunk_x]
+            chunks_y = [start_chunk_y]
+        if direction == LEFT_DOWN:
+            chunks_x = [start_chunk_x]
+            chunks_y = [start_chunk_y + 2]
 
         # присвоение каждому тайлу и объекту своего спрайта
         # прохождение от начального до финального чанка по y
-        for chunk_y in range(start_y, final_y):
-            index_y += 1
-            index_x = start_index_x
+        for chunk_y in chunks_y:
+            index_y = chunk_y - start_chunk_y
             # прохождение от начального до финального чанка по x
-            for chunk_x in range(start_x, final_x):
-                index_x += 1
+            for chunk_x in chunks_x:
+                index_x = chunk_x - start_chunk_x
                 # прохождение по каждому элементу чанка по y
-                for y in range(self.chunk_size_y):
+                for y in range(int(start_y), int(final_y)):
                     # прохождение по каждому элементу чанка по x
-                    for x in range(self.chunk_size_x):
+                    for x in range(int(start_x), int(final_x)):
                         # значение тайла
                         tile_num = self.tile_grids[chunk_y * self.chunk_size_y + y][chunk_x * self.chunk_size_x + x]
                         # значение объекта
@@ -285,14 +298,6 @@ class World:
                                 objects.Boulder(object_groups, x, y,
                                                 chunk_x * self.chunk_size_x, chunk_y * self.chunk_size_y)
 
-                        if object_num == 2:
-                            object_groups.append(self.sprite_groups.building_groups[index_x + index_y * 3])
-
-                            house = objects.House(object_groups, x, y, chunk_x * self.chunk_size_x,
-                                                  chunk_y * self.chunk_size_y)
-                            if self.build == 1:
-                                house.update(self.object_grids)
-
                         # создания экземпляра класса тайла, которому соответствуют вычесленные выше значения
                         objects.Tile(tile_groups, tile_type, x, y,
                                      chunk_x * self.chunk_size_x, chunk_y * self.chunk_size_y)
@@ -310,15 +315,15 @@ class World:
 
     # метод для применения настроек для отрисовки 3 экранов и обновления координат для центрального чанка
     # по направлению движения
-    def update(self, sprite_groups, direction):
+    def update(self, sprite_groups, direction, piece):
         # обновление группы спрайтов
         self.sprite_groups = sprite_groups
-        if direction == RIGHT:
+        if direction == RIGHT and piece == (0, 0.5):
             self.main_chunk_x += 1
-        if direction == LEFT:
+        if direction == LEFT and piece == (0.5, 1):
             self.main_chunk_x -= 1
-        if direction == UP:
+        if direction == UP and piece == (0.5, 1):
             self.main_chunk_y -= 1
-        if direction == DOWN:
+        if direction == DOWN and piece == (0, 0.5):
             self.main_chunk_y += 1
-        self.draw(direction)
+        self.draw(direction, piece)

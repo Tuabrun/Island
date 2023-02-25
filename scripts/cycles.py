@@ -17,6 +17,10 @@ RIGHT = "right"
 LEFT = "left"
 UP = "up"
 DOWN = "down"
+RIGHT_UP = "right_up"
+RIGHT_DOWN = "right_down"
+LEFT_UP = "left_up"
+LEFT_DOWN = "left_down"
 
 
 def motion(direction, camera, hero_pos, step_counter):
@@ -71,38 +75,45 @@ class SpriteGroupsForChunks:
                 sprite_group[i].draw(chunks[i])
 
 
-def update_chunks(direction, sprite_groups, camera, hero_pos, screen_size, world, chunks):
+def update_chunks(direction, piece, sprite_groups, world, chunks, screen_size=0):
     offset = None
     saved_chunks = None
-    if direction == RIGHT:
+    camera = None
+    hero_pos = None
+    if direction == RIGHT and piece == (0, 0.5):
         offset = 1
         saved_chunks = [0, 1, 3, 4, 6, 7]
         camera = 0 - screen_size // 2
         hero_pos = 0
-    if direction == LEFT:
+    if direction == LEFT and piece == (0.5, 1):
         offset = -1
         saved_chunks = [1, 2, 4, 5, 7, 8]
         camera = -screen_size + 1 - screen_size // 2
         hero_pos = screen_size - 1
-    if direction == UP:
+    if direction == UP and piece == (0.5, 1):
         offset = -3
         saved_chunks = list(range(3, 9))
         camera = -screen_size + 1 - screen_size // 2
         hero_pos = screen_size - 1
-    if direction == DOWN:
+    if direction == DOWN and piece == (0, 0.5):
         offset = 3
         saved_chunks = list(range(6))
         camera = 0 - screen_size // 2
         hero_pos = 0
-    sprite_groups_copy = SpriteGroupsForChunks()
-    for index in saved_chunks:
-        for group_of_sprites in range(len(sprite_groups.get_all_sprite_groups())):
-            sprite_groups_copy.get_all_sprite_groups()[group_of_sprites][index] = \
-                sprite_groups.get_all_sprite_groups()[group_of_sprites][index + offset]
-    sprite_groups = sprite_groups_copy
-    world.update(sprite_groups, direction)
+
+    if (direction == RIGHT and piece == (0, 0.5)) or (direction == LEFT and piece == (0.5, 1)) \
+            or (direction == UP and piece == (0.5, 1)) or (direction == DOWN and piece == (0, 0.5)):
+        sprite_groups_copy = SpriteGroupsForChunks()
+        for index in saved_chunks:
+            for group_of_sprites in range(len(sprite_groups.get_all_sprite_groups())):
+                sprite_groups_copy.get_all_sprite_groups()[group_of_sprites][index] = \
+                    sprite_groups.get_all_sprite_groups()[group_of_sprites][index + offset]
+        sprite_groups = sprite_groups_copy
+    world.update(sprite_groups, direction, piece)
     sprite_groups.draw(chunks)
-    return sprite_groups, camera, hero_pos
+    if screen_size != 0:
+        return sprite_groups, camera, hero_pos
+    return sprite_groups
 
 
 def menu_cycle(screen, click_sound):
@@ -189,6 +200,8 @@ def game_cycle(screen, width, height, save_number, step_sound):
         chunks.append(chunk)
     # отрисовка спрайтов на этих чанках
     sprite_groups.draw(chunks)
+    right_chunk = left_chunk = up_chunk = down_chunk = True
+    right_up_chunk = right_down_chunk = left_up_chunk = left_down_chunk = [True, True]
 
     hot_bar = HotBar(interface_group, true_width, true_height)
 
@@ -336,25 +349,131 @@ def game_cycle(screen, width, height, save_number, step_sound):
             frame_number = 0
         hero.update(action, direction, frame_number)
 
-        # дальше идут 4 похожих блока пока, поэтому поясю за все сразу
-        # если левый верхний чанк полностью ущёл за границы экрана (то-есть координаты его верхнего левого угла
-        # либо меньше отрицательного размера экрана по x или по y, либо больше 0), то первые 3 чанка по
-        # направлению движения камеры полностью обновляют свои группы спрайтов, а остальные 6 чанков меняют свои
-        # группы спрайтов на группу спрайтов соседа по направлению движения камеры. Соответственно меняется и главный
-        # чанк по направлению движения камеры. В конце все группы спрайтов отрисовываюся на своих чанках, а положение
-        # камеры смещается к персонажу на главном чанке
+        #
         if camera_x + width // 2 <= -width:
-            sprite_groups, camera_x, hero_x = update_chunks(RIGHT, sprite_groups, camera_x,
-                                                            hero_x, width, world, chunks)
+            if not up_chunk:
+                sprite_groups = update_chunks(UP, (0, 0.5), sprite_groups, world, chunks)
+            if not down_chunk:
+                sprite_groups = update_chunks(DOWN, (0.5, 1), sprite_groups, world, chunks)
+            if not right_up_chunk[0]:
+                sprite_groups = update_chunks(RIGHT_UP, (0, 0.5), sprite_groups, world, chunks)
+            if not right_up_chunk[1]:
+                sprite_groups = update_chunks(RIGHT_UP, (0.5, 1), sprite_groups, world, chunks)
+            if not right_down_chunk[0]:
+                sprite_groups = update_chunks(RIGHT_DOWN, (0, 0.5), sprite_groups, world, chunks)
+            if not right_down_chunk[1]:
+                sprite_groups = update_chunks(RIGHT_DOWN, (0.5, 1), sprite_groups, world, chunks)
+            sprite_groups, camera_x, hero_x = update_chunks(RIGHT, (0, 0.5), sprite_groups, world, chunks, width)
+            right_chunk = False
+            right_up_chunk = right_down_chunk = [False, False]
+            left_chunk = up_chunk = down_chunk = True
+            left_up_chunk = left_down_chunk = [True, True]
         if camera_x + width // 2 > 0:
-            sprite_groups, camera_x, hero_x = update_chunks(LEFT, sprite_groups, camera_x,
-                                                            hero_x, width, world, chunks)
+            if not up_chunk:
+                sprite_groups = update_chunks(UP, (0, 0.5), sprite_groups, world, chunks)
+            if not down_chunk:
+                sprite_groups = update_chunks(DOWN, (0.5, 1), sprite_groups, world, chunks)
+            if not left_up_chunk[0]:
+                sprite_groups = update_chunks(LEFT_UP, (0.5, 1), sprite_groups, world, chunks)
+            if not left_up_chunk[1]:
+                sprite_groups = update_chunks(LEFT_UP, (0, 0.5), sprite_groups, world, chunks)
+            if not left_down_chunk[0]:
+                sprite_groups = update_chunks(LEFT_DOWN, (0.5, 1), sprite_groups, world, chunks)
+            if not left_down_chunk[1]:
+                sprite_groups = update_chunks(LEFT_DOWN, (0, 0.5), sprite_groups, world, chunks)
+            sprite_groups, camera_x, hero_x = update_chunks(LEFT, (0.5, 1), sprite_groups, world, chunks, width)
+            left_chunk = False
+            left_up_chunk = left_down_chunk = [False, False]
+            right_chunk = up_chunk = down_chunk = True
+            right_up_chunk = right_down_chunk = [True, True]
         if camera_y + height // 2 >= 0:
-            sprite_groups, camera_y, hero_y = update_chunks(UP, sprite_groups, camera_y,
-                                                            hero_y, height, world, chunks)
+            if not right_chunk:
+                sprite_groups = update_chunks(RIGHT, (0.5, 1), sprite_groups, world, chunks)
+            if not left_chunk:
+                sprite_groups = update_chunks(LEFT, (0, 0.5), sprite_groups, world, chunks)
+            if not right_up_chunk[0]:
+                sprite_groups = update_chunks(RIGHT_UP, (0, 0.5), sprite_groups, world, chunks)
+            if not right_up_chunk[1]:
+                sprite_groups = update_chunks(RIGHT_UP, (0.5, 1), sprite_groups, world, chunks)
+            if not left_up_chunk[0]:
+                sprite_groups = update_chunks(LEFT_UP, (0.5, 1), sprite_groups, world, chunks)
+            if not left_up_chunk[1]:
+                sprite_groups = update_chunks(LEFT_UP, (0, 0.5), sprite_groups, world, chunks)
+            sprite_groups, camera_y, hero_y = update_chunks(UP, (0.5, 1), sprite_groups, world, chunks, height)
+            up_chunk = False
+            right_up_chunk = left_up_chunk = [False, False]
+            right_chunk = left_chunk = down_chunk = True
+            right_down_chunk = left_down_chunk = [True, True]
         if camera_y + height // 2 <= -height:
-            sprite_groups, camera_y, hero_y = update_chunks(DOWN, sprite_groups, camera_y,
-                                                            hero_y, height, world, chunks)
+            if not right_chunk:
+                sprite_groups = update_chunks(RIGHT, (0.5, 1), sprite_groups, world, chunks)
+            if not left_chunk:
+                sprite_groups = update_chunks(LEFT, (0, 0.5), sprite_groups, world, chunks)
+            if not right_down_chunk[0]:
+                sprite_groups = update_chunks(RIGHT_DOWN, (0, 0.5), sprite_groups, world, chunks)
+            if not right_down_chunk[1]:
+                sprite_groups = update_chunks(RIGHT_DOWN, (0.5, 1), sprite_groups, world, chunks)
+            if not left_down_chunk[0]:
+                sprite_groups = update_chunks(LEFT_DOWN, (0.5, 1), sprite_groups, world, chunks)
+            if not left_down_chunk[1]:
+                sprite_groups = update_chunks(LEFT_DOWN, (0, 0.5), sprite_groups, world, chunks)
+            sprite_groups, camera_y, hero_y = update_chunks(DOWN, (0, 0.5), sprite_groups, world, chunks, height)
+            down_chunk = False
+            right_down_chunk = left_down_chunk = [False, False]
+            right_chunk = left_chunk = up_chunk = True
+            right_up_chunk = left_up_chunk = [True, True]
+
+        if camera_x + width // 2 < -width * 0.25 and not right_chunk:
+            sprite_groups = update_chunks(RIGHT, (0.5, 1), sprite_groups, world, chunks)
+            right_chunk = True
+        if camera_x + width // 2 > -width * 0.75 and not left_chunk:
+            sprite_groups = update_chunks(LEFT, (0, 0.5), sprite_groups, world, chunks)
+            left_chunk = True
+            print(LEFT)
+        if camera_y + height // 2 > -height * 0.75 and not up_chunk:
+            sprite_groups = update_chunks(UP, (0, 0.5), sprite_groups, world, chunks)
+            up_chunk = True
+        if camera_y + height // 2 < -height * 0.25 and not down_chunk:
+            sprite_groups = update_chunks(DOWN, (0.5, 1), sprite_groups, world, chunks)
+            down_chunk = True
+
+        if camera_x + width // 2 < -width // 2 and camera_y + height // 2 > -height // 2 and not right_up_chunk[0]:
+            sprite_groups = update_chunks(RIGHT_UP, (0, 0.5), sprite_groups, world, chunks)
+            right_up_chunk[0] = True
+        if camera_x + width // 2 < -width // 2 and camera_y + height // 2 < -height // 2 and not right_down_chunk[0]:
+            sprite_groups = update_chunks(RIGHT_DOWN, (0, 0.5), sprite_groups, world, chunks)
+            right_down_chunk[0] = True
+        if camera_x + width // 2 > -width // 2 and camera_y + height // 2 > -height // 2 and not left_up_chunk[0]:
+            sprite_groups = update_chunks(LEFT_UP, (0.5, 1), sprite_groups, world, chunks)
+            left_up_chunk[0] = True
+            print(LEFT_UP, 0)
+        if camera_x + width // 2 > -width // 2 and camera_y + height // 2 < -height // 2 and not left_down_chunk[0]:
+            sprite_groups = update_chunks(LEFT_DOWN, (0.5, 1), sprite_groups, world, chunks)
+            left_down_chunk[0] = True
+            print(LEFT_DOWN, 0)
+
+        if (camera_x + width // 2 < -width * 0.75 and camera_y + height // 2 > -height // 2 or
+            camera_x + width // 2 < -width // 2 and camera_y + height // 2 > -height * 0.25) and \
+                not right_up_chunk[1]:
+            sprite_groups = update_chunks(RIGHT_UP, (0.5, 1), sprite_groups, world, chunks)
+            right_up_chunk[1] = True
+        if (camera_x + width // 2 < -width * 0.75 and camera_y + height // 2 < -height // 2 or
+            camera_x + width // 2 < -width // 2 and camera_y + height // 2 < -height * 0.75) and \
+                not right_down_chunk[1]:
+            sprite_groups = update_chunks(RIGHT_DOWN, (0.5, 1), sprite_groups, world, chunks)
+            right_down_chunk[1] = True
+        if (camera_x + width // 2 > -width * 0.25 and camera_y + height // 2 > -height // 2 or
+            camera_x + width // 2 > -width // 2 and camera_y + height // 2 > -height * 0.25) and \
+                not left_up_chunk[1]:
+            sprite_groups = update_chunks(LEFT_UP, (0, 0.5), sprite_groups, world, chunks)
+            left_up_chunk[1] = True
+            print(LEFT_UP, 1)
+        if (camera_x + width // 2 > -width * 0.25 and camera_y + height // 2 < -height // 2 or
+            camera_x + width // 2 > -width // 2 and camera_y + height // 2 < -height * 0.75) and \
+                not left_down_chunk[1]:
+            sprite_groups = update_chunks(LEFT_DOWN, (0, 0.5), sprite_groups, world, chunks)
+            left_down_chunk[1] = True
+            print(LEFT_DOWN, 1)
 
         # изменение положения всех чанков на дисплее
         for index_x in range(3):
