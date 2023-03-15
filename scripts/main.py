@@ -3,7 +3,7 @@ from pygame.locals import *
 import os
 
 from file_directory import file_directory
-from load_image import load_image
+from load_image import load_sprites
 from cycles import game_cycle, menu_cycle
 
 
@@ -33,8 +33,10 @@ if __name__ == '__main__':
     screen = pygame.display.set_mode((width, height), flags)
     screen.set_alpha(None)
 
+    sprites = load_sprites()
+
     # загрузка иконки
-    program_icon = load_image("icon.png")
+    program_icon = sprites["icon"]
     # применение иконки
     pygame.display.set_icon(program_icon)
 
@@ -44,7 +46,7 @@ if __name__ == '__main__':
         # если игровой цикл не идёт, то запускается цикл меню
         if not start_game:
             # при завершении игрового цикла возврашается True
-            start_game = menu_cycle(screen, click_sound)
+            start_game = menu_cycle(screen, sprites, click_sound)
         # если игровой цикл идёт
         if start_game:
             # с помощью библиотеки os из директории, в которой находится main.py, программа поднимается на папку выше
@@ -56,4 +58,4 @@ if __name__ == '__main__':
                 # берётся папка сохранения с самым большим номером
                 save_number = max(list(map(int, os.listdir())))
                 # запуск игрового цикла с выбранным сохранением
-                start_game = game_cycle(screen, width, height, save_number, step_sound)
+                start_game = game_cycle(screen, width, height, save_number, sprites, step_sound)

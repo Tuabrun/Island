@@ -1,8 +1,6 @@
 import pygame
 
-from file_directory import file_directory
 from print_text import print_text
-from load_image import load_image
 
 TILE_WIDTH = TILE_HEIGHT = 96
 RIGHT = "right"
@@ -59,16 +57,14 @@ def check_collision_at_the_border(border, chunk_size, object, sprite_group):
 
 # базовый класс для всех объектов в игре
 class Object(pygame.sprite.Sprite):
-    def __init__(self, groups, type, pos_x, pos_y, chunk_pos_x, chunk_pos_y, alpha, columns, rows, number_of_strokes):
+    def __init__(self, groups, sprites, object_type, pos_x, pos_y,
+                 chunk_pos_x, chunk_pos_y, columns, rows, number_of_strokes):
         # groups - группы спрайтов, к которым принадлежит спрайт
         # alpha - для картинок с прозрачыми пикселями
         # columns - максимальное количество кадров среди всех анимаций спрайтов
         # rows - количество спрайтов
 
         super().__init__(*groups)
-        # название спрайта. Нужно для того, чтобы связывать объект и то, что из него можно добыть
-        self.type = type[:-4]
-
         # координаты левого верхнего угла спрайта внутри чанка
         self.pos_x = pos_x
         self.pos_y = pos_y
@@ -88,7 +84,7 @@ class Object(pygame.sprite.Sprite):
         self.number_of_strokes = number_of_strokes
 
         # нарезка спрайта на куски для анимаций
-        self.cut_sheet(load_image(type, alpha=alpha), columns, rows)
+        self.cut_sheet(sprites[object_type], columns, rows)
 
         self.image = self.frames[self.hit_points]
         self.rect = self.image.get_rect(topleft=(TILE_WIDTH * pos_x, TILE_HEIGHT * pos_y))
@@ -170,8 +166,8 @@ class Object(pygame.sprite.Sprite):
 
 
 class InventoryItem(Object):
-    def __init__(self, item_groups, item_type, pos_x, pos_y, chunk_pos_x=None, chunk_pos_y=None):
-        super().__init__(item_groups, item_type, pos_x, pos_y, chunk_pos_x, chunk_pos_y, True, 1, 1, 1)
+    def __init__(self, item_groups, sprite, item_type, pos_x, pos_y, chunk_pos_x=None, chunk_pos_y=None):
+        super().__init__(item_groups, sprite, item_type, pos_x, pos_y, chunk_pos_x, chunk_pos_y, 1, 1, 1)
 
         # количество объектов внутри одного. То-есть стак
         self.amount = 0
@@ -191,26 +187,26 @@ class InventoryItem(Object):
 
 
 class Tile(Object):
-    def __init__(self, tile_groups, tile_type, pos_x, pos_y, chunk_x, chunk_y):
-        super().__init__(tile_groups, tile_type, pos_x, pos_y, chunk_x, chunk_y, False, 1, 1, 1)
+    def __init__(self, tile_groups, sprites, tile_type, pos_x, pos_y, chunk_x, chunk_y):
+        super().__init__(tile_groups, sprites, tile_type, pos_x, pos_y, chunk_x, chunk_y, 1, 1, 1)
 
 
 class Tree(Object):
-    def __init__(self, object_groups, pos_x, pos_y, chunk_x, chunk_y):
-        super().__init__(object_groups, "tree.png", pos_x, pos_y, chunk_x, chunk_y, True, 1, 1, 1)
+    def __init__(self, object_groups, sprites, pos_x, pos_y, chunk_x, chunk_y):
+        super().__init__(object_groups, sprites, "tree", pos_x, pos_y, chunk_x, chunk_y, 1, 1, 1)
 
 
 class Boulder(Object):
-    def __init__(self, object_groups, pos_x, pos_y, chunk_x, chunk_y):
-        super().__init__(object_groups, "stone.png", pos_x, pos_y, chunk_x, chunk_y, True, 6, 1, 5)
+    def __init__(self, object_groups, sprites, pos_x, pos_y, chunk_x, chunk_y):
+        super().__init__(object_groups, sprites, "stone", pos_x, pos_y, chunk_x, chunk_y, 6, 1, 5)
 
 
 class Stone(InventoryItem):
-    def __init__(self, item_groups, pos_x, pos_y):
-        super().__init__(item_groups, "inventory_stone.png", pos_x, pos_y)
+    def __init__(self, item_groups, sprites, pos_x, pos_y):
+        super().__init__(item_groups, sprites, "inventory_stone", pos_x, pos_y)
         self.type = "stone"
 
 
 class House(Object):
-    def __init__(self, object_groups, pos_x, pos_y, chunk_x, chunk_y):
-        super().__init__(object_groups, "house.png", pos_x, pos_y, chunk_x, chunk_y, True, 2, 1, 3)
+    def __init__(self, object_groups, sprites, pos_x, pos_y, chunk_x, chunk_y):
+        super().__init__(object_groups, sprites, "house", pos_x, pos_y, chunk_x, chunk_y, 2, 1, 3)

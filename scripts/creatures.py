@@ -1,6 +1,5 @@
 import pygame
 
-from load_image import load_image
 import objects
 
 TILE_WIDTH = TILE_HEIGHT = 96
@@ -20,7 +19,7 @@ class EmptyCell:
 
 
 class Hero(pygame.sprite.Sprite):
-    def __init__(self, hero_group):
+    def __init__(self, hero_group, sprites):
         super().__init__(hero_group)
 
         # массив картинок, из которых состоят анимации. Каждая анимация идёт по порядку сверху вниз, если посмотреть
@@ -34,7 +33,7 @@ class Hero(pygame.sprite.Sprite):
         self.inventory = [EmptyCell(), EmptyCell(), EmptyCell(), EmptyCell()]
 
         # нарезка спрайта на куски для анимаций
-        self.cut_sheet(load_image("hero.png", alpha=True), 9, 4)
+        self.cut_sheet(sprites["hero"], 9, 4)
         self.update("run", RIGHT, 0)
 
     # пока не буду писать коментарии, потому что наверсняка переделаем эту функцию
@@ -70,7 +69,7 @@ class Hero(pygame.sprite.Sprite):
         hero_tile_x = hero_x // TILE_WIDTH
         hero_tile_y = hero_y // TILE_HEIGHT
 
-        # кортеж, содержащий координаты левого верхнего угла треугольника
+        # кортеж, содержащий координаты левого верхнего угла
         topleft = (hero_x, hero_y)
 
         # обновление координатов персонажа
@@ -231,8 +230,8 @@ class Hero(pygame.sprite.Sprite):
 
 
 class Creature(pygame.sprite.Sprite):
-    def __init__(self, creature_group, creature_type, pos_x, pos_y):
+    def __init__(self, creature_group, sprites, creature_type, pos_x, pos_y):
         super().__init__(creature_group)
-        self.image = load_image(creature_type, alpha=True)
-        self.rect = self.image.get_rect().move(pos_x, pos_y)
+        self.image = sprites[creature_type]
+        self.rect = self.image.get_rect(topleft=(pos_x, pos_y))
         self.motion_x = self.motion_y = None

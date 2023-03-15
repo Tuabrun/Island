@@ -21,7 +21,7 @@ LEFT_DOWN = "left_down"
 # класс для создания мира, наполнения его объктами, присвоения значениям соответствующих спрайтов, загрузки сохранеия
 # и обновления экрана
 class World:
-    def __init__(self, width, height, seed, screen_width, screen_height, sprite_groups=None):
+    def __init__(self, width, height, seed, screen_width, screen_height, sprites=None, sprite_groups=None):
         # класс, хранящий все группы спрайтов для чанков. Подробнее о нём можно прочитать в классе
         # SpriteGroupsForChunks в cycles.py
         self.sprite_groups = sprite_groups
@@ -40,6 +40,9 @@ class World:
         # числа, равные максимальному колличеству тайлов на экране по x и по y
         self.chunk_size_x = self.screen_width // TILE_WIDTH
         self.chunk_size_y = self.screen_height // TILE_HEIGHT
+
+        # словарь спрайтов, необходимый для иницилизации объектов
+        self.sprites = sprites
 
         # координаты персонажа внутри чанка
         self.hero_x = None
@@ -182,30 +185,26 @@ class World:
         # координаты левого верхнего чанка, где единичный отрезок - это размеры чанка
         start_chunk_x = self.main_chunk_x - 1
         start_chunk_y = self.main_chunk_y - 1
-
-        start_x = 0
-        start_y = self.chunk_size_y * piece[0]
-
-        final_x = self.chunk_size_x
-        final_y = self.chunk_size_y * piece[1]
-
         chunks_x = [start_chunk_x, start_chunk_x + 1, start_chunk_x + 2]
         chunks_y = [start_chunk_y, start_chunk_y + 1, start_chunk_y + 2]
+
+        if direction in (RIGHT, LEFT):
+            start_x = self.chunk_size_x * piece[0]
+            start_y = 0
+            final_x = self.chunk_size_x * piece[1]
+            final_y = self.chunk_size_y
+        else:
+            start_x = 0
+            start_y = self.chunk_size_y * piece[0]
+            final_x = self.chunk_size_x
+            final_y = self.chunk_size_y * piece[1]
 
         if direction == RIGHT:
             chunks_x = [start_chunk_x + 2]
             chunks_y = [start_chunk_y + 1]
-            start_x = self.chunk_size_x * piece[0]
-            start_y = 0
-            final_x = self.chunk_size_x * piece[1]
-            final_y = self.chunk_size_y
         if direction == LEFT:
             chunks_x = [start_chunk_x]
             chunks_y = [start_chunk_y + 1]
-            start_x = self.chunk_size_x * piece[0]
-            start_y = 0
-            final_x = self.chunk_size_x * piece[1]
-            final_y = self.chunk_size_y
         if direction == UP:
             chunks_x = [start_chunk_x + 1]
             chunks_y = [start_chunk_y]
@@ -249,13 +248,13 @@ class World:
 
                         # если значение находится в этом диапазоне, то оно соответствует тайлу воды
                         if -1 <= tile_num < -0.2:
-                            tile_type = "water.png"
+                            tile_type = "water"
                             # добавление к группам спрайтов для этого тайла группу спрайтов для тайлов воды
                             tile_groups.append(self.sprite_groups.water_tile_groups[index_x + index_y * 3])
 
                         # если значение находится в этом диапазоне, то оно соответствует тайлу песка
                         if -0.2 <= tile_num < 0:
-                            tile_type = "sand.png"
+                            tile_type = "sand"
                             # валун может находиться на тайле песка, поэтому
                             # если на этом же месте в массиве с объектами находится значение большее или равное этому,
                             # то оно равно валуну
@@ -266,12 +265,12 @@ class World:
                                     self.sprite_groups.for_extraction_with_pickaxe_groups[index_x + index_y * 3])
 
                                 # создания экземпляра класса валуна
-                                objects.Boulder(object_groups, x, y,
+                                objects.Boulder(object_groups, self.sprites, x, y,
                                                 chunk_x * self.chunk_size_x, chunk_y * self.chunk_size_y)
 
                         # если значение находится в этом диапазоне, то оно соответствует тайлу травы
                         if tile_num == 0:
-                            tile_type = "grass.png"
+                            tile_type = "grass"
                             # валун или дерево могут находиться на тайле травы, поэтому:
 
                             # если на этом же месте в массиве с объектами находится в этом диапазоне,
@@ -283,7 +282,7 @@ class World:
                                     self.sprite_groups.for_extraction_with_axe_groups[index_x + index_y * 3])
 
                                 # создания экземпляра класса дерева
-                                objects.Tree(object_groups, x, y,
+                                objects.Tree(object_groups, self.sprites, x, y,
                                              chunk_x * self.chunk_size_x, chunk_y * self.chunk_size_y)
 
                             # если на этом же месте в массиве с объектами находится значение большее или равное этому,
@@ -295,11 +294,11 @@ class World:
                                     self.sprite_groups.for_extraction_with_pickaxe_groups[index_x + index_y * 3])
 
                                 # создания экземпляра класса валуна
-                                objects.Boulder(object_groups, x, y,
+                                objects.Boulder(object_groups, self.sprites, x, y,
                                                 chunk_x * self.chunk_size_x, chunk_y * self.chunk_size_y)
 
                         # создания экземпляра класса тайла, которому соответствуют вычесленные выше значения
-                        objects.Tile(tile_groups, tile_type, x, y,
+                        objects.Tile(tile_groups, self.sprites, tile_type, x, y,
                                      chunk_x * self.chunk_size_x, chunk_y * self.chunk_size_y)
 
     def make_map(self):
