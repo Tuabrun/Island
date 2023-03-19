@@ -7,24 +7,16 @@ import numpy
 
 import objects
 
-TILE_WIDTH = TILE_HEIGHT = 96
-RIGHT = "right"
-LEFT = "left"
-UP = "up"
-DOWN = "down"
-RIGHT_UP = "right_up"
-RIGHT_DOWN = "right_down"
-LEFT_UP = "left_up"
-LEFT_DOWN = "left_down"
+from constants import TILE_WIDTH, TILE_HEIGHT, RIGHT, LEFT, UP, DOWN, RIGHT_UP, RIGHT_DOWN, LEFT_UP, LEFT_DOWN
 
 
 # класс для создания мира, наполнения его объктами, присвоения значениям соответствующих спрайтов, загрузки сохранеия
 # и обновления экрана
 class World:
-    def __init__(self, width, height, seed, screen_width, screen_height, sprites=None, sprite_groups=None):
+    def __init__(self, width, height, seed, screen_width, screen_height, sprites=None, sprite_groups_chunks=None):
         # класс, хранящий все группы спрайтов для чанков. Подробнее о нём можно прочитать в классе
         # SpriteGroupsForChunks в cycles.py
-        self.sprite_groups = sprite_groups
+        self.sprite_groups_chunks = sprite_groups_chunks
 
         # размеры карты по x и по y, где единичный отрезок - это размеры чанка или 1 пиксель для мини-карты
         self.width = width
@@ -146,9 +138,6 @@ class World:
 
         # карта шума в виде двумерного массива
         self.object_grids = self.create_matrix(self.object_lines)
-        self.object_grids[self.main_chunk_y * self.chunk_size_y
-                          + self.hero_y // TILE_HEIGHT][self.main_chunk_x * self.chunk_size_x
-                                                        + self.hero_x // TILE_WIDTH + 1] = 2
 
     def load_save(self, save_number):
         # save_number - номер папки сохранения
@@ -242,15 +231,15 @@ class World:
                         object_num = self.object_grids[chunk_y * self.chunk_size_y + y][chunk_x * self.chunk_size_x + x]
 
                         # группы спрайтов, в которые нужно добавить спрайт тайла
-                        tile_groups = [self.sprite_groups.chunk_groups[index_x + index_y * 3]]
+                        tile_groups = [self.sprite_groups_chunks.chunk_groups[index_x + index_y * 3]]
                         # группы спрайтов, в которые нужно добавить спрайт объекта
-                        object_groups = [self.sprite_groups.object_groups[index_x + index_y * 3]]
+                        object_groups = [self.sprite_groups_chunks.object_groups[index_x + index_y * 3]]
 
                         # если значение находится в этом диапазоне, то оно соответствует тайлу воды
                         if -1 <= tile_num < -0.2:
                             tile_type = "water"
                             # добавление к группам спрайтов для этого тайла группу спрайтов для тайлов воды
-                            tile_groups.append(self.sprite_groups.water_tile_groups[index_x + index_y * 3])
+                            tile_groups.append(self.sprite_groups_chunks.water_tile_groups[index_x + index_y * 3])
 
                         # если значение находится в этом диапазоне, то оно соответствует тайлу песка
                         if -0.2 <= tile_num < 0:
@@ -262,7 +251,7 @@ class World:
                                 # добавление к группам спрайтов для этого валуна группу спрайтов, элементы которой
                                 # можно сломать киркой
                                 object_groups.append(
-                                    self.sprite_groups.for_extraction_with_pickaxe_groups[index_x + index_y * 3])
+                                    self.sprite_groups_chunks.for_extraction_with_pickaxe_groups[index_x + index_y * 3])
 
                                 # создания экземпляра класса валуна
                                 objects.Boulder(object_groups, self.sprites, x, y,
@@ -279,7 +268,7 @@ class World:
                                 # добавление к группам спрайтов для этого дерева группу спрайтов, элементы которой
                                 # можно сломать топором
                                 object_groups.append(
-                                    self.sprite_groups.for_extraction_with_axe_groups[index_x + index_y * 3])
+                                    self.sprite_groups_chunks.for_extraction_with_axe_groups[index_x + index_y * 3])
 
                                 # создания экземпляра класса дерева
                                 objects.Tree(object_groups, self.sprites, x, y,
@@ -291,7 +280,7 @@ class World:
                                 # добавление к группам спрайтов для этого валуна группу спрайтов, элементы которой
                                 # можно сломать киркой
                                 object_groups.append(
-                                    self.sprite_groups.for_extraction_with_pickaxe_groups[index_x + index_y * 3])
+                                    self.sprite_groups_chunks.for_extraction_with_pickaxe_groups[index_x + index_y * 3])
 
                                 # создания экземпляра класса валуна
                                 objects.Boulder(object_groups, self.sprites, x, y,
@@ -314,9 +303,9 @@ class World:
 
     # метод для применения настроек для отрисовки 3 экранов и обновления координат для центрального чанка
     # по направлению движения
-    def update(self, sprite_groups, direction, piece):
+    def update(self, sprite_groups_chunks, direction, piece):
         # обновление группы спрайтов
-        self.sprite_groups = sprite_groups
+        self.sprite_groups_chunks = sprite_groups_chunks
         if direction == RIGHT and piece == (0, 0.5):
             self.main_chunk_x += 1
         if direction == LEFT and piece == (0.5, 1):

@@ -1,7 +1,5 @@
 import pygame
 
-from load_image import load_sprite
-
 
 # базовый класс для элементов интерфейса
 class InterfaceElements(pygame.sprite.Sprite):

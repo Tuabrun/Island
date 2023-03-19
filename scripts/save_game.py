@@ -3,7 +3,7 @@ import os
 
 from world import World
 
-TILE_WIDTH = TILE_HEIGHT = 96
+from constants import TILE_WIDTH, TILE_HEIGHT
 
 
 def save_file(save_number, save_name, information):

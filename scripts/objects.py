@@ -2,22 +2,18 @@ import pygame
 
 from print_text import print_text
 
-TILE_WIDTH = TILE_HEIGHT = 96
-RIGHT = "right"
-LEFT = "left"
-UP = "up"
-DOWN = "down"
+from constants import TILE_WIDTH, TILE_HEIGHT, RIGHT, LEFT, UP, DOWN
 
 
-def check_collision_at_the_border(border, chunk_size, object, sprite_group):
+def check_collision_at_the_border(border, chunk_size, game_object, sprite_group):
     # border - у какой границы находится объект
     # chunk_size - на сколько изменить значение. Эта переменная должна соответствовать границе
     # object - объект для которго проверяется столкновение
     # sprite_group - группа спрайтов, с которой проверяется столкновение
 
     # сохранение начальных координат
-    pos_x = object.pos_x
-    pos_y = object.pos_y
+    pos_x = game_object.pos_x
+    pos_y = game_object.pos_y
 
     # если объект находится на этих границах, то в зависимости от границы к координате может прибавиться или убавиться
     # количество тайлов, корорые могут поместиться на экране. Например, если объект находится у левой границы, то для
@@ -32,26 +28,28 @@ def check_collision_at_the_border(border, chunk_size, object, sprite_group):
     # Бага не происходит потому, что группы спрайтов тоже разделены на 9 штук для того, чтобы мы могли проверять
     # столкновение только со спрайтами определённого чанка.
     if border == RIGHT:
-        object.pos_x -= chunk_size
+        game_object.pos_x -= chunk_size
     if border == LEFT:
-        object.pos_x += chunk_size
+        game_object.pos_x += chunk_size
     if border == UP:
-        object.pos_y += chunk_size
+        game_object.pos_y += chunk_size
     if border == DOWN:
-        object.pos_y -= chunk_size
+        game_object.pos_y -= chunk_size
 
     # изменение координат объекта со значениями описанными выше
-    object.rect = object.image.get_rect(topleft=(TILE_WIDTH * object.pos_x, TILE_HEIGHT * object.pos_y))
+    game_object.rect = game_object.image.get_rect(topleft=(TILE_WIDTH * game_object.pos_x,
+                                                           TILE_HEIGHT * game_object.pos_y))
 
     # проверка на столкновение по новым координатам
-    collision = pygame.sprite.spritecollideany(object, sprite_group)
+    collision = pygame.sprite.spritecollideany(game_object, sprite_group)
 
     # возвращение к начальным коодинатам
-    object.pos_x = pos_x
-    object.pos_y = pos_y
+    game_object.pos_x = pos_x
+    game_object.pos_y = pos_y
 
     # применение начальных координат
-    object.rect = object.image.get_rect(topleft=(TILE_WIDTH * object.pos_x, TILE_HEIGHT * object.pos_y))
+    game_object.rect = game_object.image.get_rect(topleft=(TILE_WIDTH * game_object.pos_x,
+                                                           TILE_HEIGHT * game_object.pos_y))
     return collision
 
 
@@ -65,6 +63,8 @@ class Object(pygame.sprite.Sprite):
         # rows - количество спрайтов
 
         super().__init__(*groups)
+        self.object_type = object_type
+
         # координаты левого верхнего угла спрайта внутри чанка
         self.pos_x = pos_x
         self.pos_y = pos_y
@@ -73,16 +73,15 @@ class Object(pygame.sprite.Sprite):
         self.chunk_pos_x = chunk_pos_x
         self.chunk_pos_y = chunk_pos_y
 
-        # массив картинок, из которых состоят анимации. Каждая анимация идёт по порядку сверху вниз, если посмотреть
-        # файл со спрайтом
-        self.frames = []
-
         # количество ударов, нанесённых по объектов
         self.hit_points = 0
 
         # количество ударов, которое может выдержать объект
         self.number_of_strokes = number_of_strokes
 
+        # массив картинок, из которых состоят анимации. Каждая анимация идёт по порядку сверху вниз, если посмотреть
+        # файл со спрайтом
+        self.frames = []
         # нарезка спрайта на куски для анимаций
         self.cut_sheet(sprites[object_type], columns, rows)
 
@@ -204,9 +203,4 @@ class Boulder(Object):
 class Stone(InventoryItem):
     def __init__(self, item_groups, sprites, pos_x, pos_y):
         super().__init__(item_groups, sprites, "inventory_stone", pos_x, pos_y)
-        self.type = "stone"
-
-
-class House(Object):
-    def __init__(self, object_groups, sprites, pos_x, pos_y, chunk_x, chunk_y):
-        super().__init__(object_groups, sprites, "house", pos_x, pos_y, chunk_x, chunk_y, 2, 1, 3)
+        self.object_type = "stone"  # временное решение

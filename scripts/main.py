@@ -6,11 +6,9 @@ from file_directory import file_directory
 from load_image import load_sprites
 from cycles import game_cycle, menu_cycle
 
+from constants import TILE_WIDTH, TILE_HEIGHT
 
 if __name__ == '__main__':
-    # размеры тайла
-    TILE_WIDTH = TILE_HEIGHT = 96
-
     pygame.init()
 
     # это тебе коментировать
@@ -24,12 +22,12 @@ if __name__ == '__main__':
 
     info_object = pygame.display.Info()
     # ширина экрана
-    width = info_object.current_w // TILE_WIDTH * TILE_WIDTH
+    width = info_object.current_w // TILE_WIDTH * TILE_WIDTH + 10
     # высота экрана
-    height = info_object.current_h // TILE_HEIGHT * TILE_HEIGHT
+    height = info_object.current_h // TILE_HEIGHT * TILE_HEIGHT + 10
 
     # создание окна
-    flags = FULLSCREEN | DOUBLEBUF
+    flags = FULLSCREEN | DOUBLEBUF | SCALED
     screen = pygame.display.set_mode((width, height), flags)
     screen.set_alpha(None)
 
@@ -37,7 +35,7 @@ if __name__ == '__main__':
 
     # загрузка иконки
     program_icon = sprites["icon"]
-    # применение иконки
+    # применение иконкиц
     pygame.display.set_icon(program_icon)
 
     while True:
