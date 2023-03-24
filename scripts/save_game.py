@@ -12,17 +12,14 @@ def save_file(save_number, save_name, information):
     # information - массив информации, которую необходимо записать в файл
 
     # открытие или создание файла из-за его отсутствия в режиме записи
-    positions = open(f"../saves/{save_number}/{save_name}", "w", encoding="utf8")
+    positions = open(f"{save_number}/{save_name}", "w", encoding="utf8")
 
     # прохождение всех элементов массива
     for element in information:
-
         # конвертация значения элемента в массив строк
         y = list(map(str, element))
-
         # склеивание массива значений в сторку, где элементы разделены пробелом
         positions.write(" ".join(y) + "\n")
-
     # заверщение работы с файлом
     positions.close()
 
@@ -53,16 +50,13 @@ def create_new_save():
         if not os.path.isdir(f"{save_number}"):
             break
         save_number += 1
-
     # создаётся папка с номером, который мы получили из цикла выше
     os.mkdir(f"{save_number}")
 
     # создаётся экземпляр класса world
     world = World(900, 450, 2, width, height)
-
     # для него создаётся мир
     world.create_world()
-
     # и наполняется объектами
     world.filling_the_world()
 

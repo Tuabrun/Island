@@ -193,8 +193,7 @@ def game_cycle(screen, width, height, save_number, sprites, step_sound):
 
     hot_bar = HotBar(interface_group, sprites, true_width, true_height)
 
-    hero = creatures.Hero(hero_group, sprites, SPEED, HERO_SIZE, HERO_SIZE)
-    direction_x = direction_y = None
+    hero = creatures.Hero(hero_group, sprites, 0, HERO_SIZE, HERO_SIZE)
     sprite = target_x = target_y = None
     speed = 3
 
@@ -205,24 +204,20 @@ def game_cycle(screen, width, height, save_number, sprites, step_sound):
 
     running = True
     stones = 0
+    XXX = 0
     while running:
-        counter = (counter + 1) % 96
         time = clock.tick()
+        XXX += time
+        if XXX >= 100:
+            XXX = 0
         if time != 0:
-            speed = time / 5.7
+            speed = time / SPEED
             hero.speed = speed
-        print(speed)
 
         if target_x is not None and -HERO_SIZE + speed + 1 < target_x < HERO_SIZE - speed - 1:
             motion_x = None
         if target_y is not None and -HERO_SIZE + speed + 1 < target_y < HERO_SIZE - speed - 1:
             motion_y = None
-
-        if step_counter == 20:
-            step_sound.play()
-            step_counter += 1
-        elif step_counter > 20:
-            step_counter = 0
 
         for event in pygame.event.get():
             # нажатие крестика в правом верхнем углу
@@ -237,13 +232,13 @@ def game_cycle(screen, width, height, save_number, sprites, step_sound):
                     return False
 
                 if event.key == pygame.K_d:
-                    motion_x = direction_x = RIGHT
+                    motion_x = RIGHT
                 if event.key == pygame.K_a:
-                    motion_x = direction_x = LEFT
+                    motion_x = LEFT
                 if event.key == pygame.K_w:
-                    motion_y = direction_y = UP
+                    motion_y = UP
                 if event.key == pygame.K_s:
-                    motion_y = direction_y = DOWN
+                    motion_y = DOWN
 
                 if event.key == pygame.K_1:
                     hero.what_is_in_hands = "axe"
@@ -284,28 +279,24 @@ def game_cycle(screen, width, height, save_number, sprites, step_sound):
             step_counter += speed / 3
             stop_motion[0] = RIGHT
             motion_x = RIGHT
-            direction_x = RIGHT
             target_x -= speed
         if target_x is not None and stop_motion[0] != LEFT and target_x < -HERO_SIZE - speed - 1:
             camera_x, hero_x = motion(LEFT, camera_x, hero_x, speed)
             step_counter += speed / 3
             stop_motion[0] = LEFT
             motion_x = LEFT
-            direction_x = LEFT
             target_x += speed
         if target_y is not None and stop_motion[1] != UP and target_y < -HERO_SIZE - speed - 1:
             camera_y, hero_y = motion(UP, camera_y, hero_y, speed)
             step_counter += speed / 3
             stop_motion[1] = UP
             motion_y = UP
-            direction_y = UP
             target_y += speed
         if target_y is not None and stop_motion[1] != DOWN and target_y > HERO_SIZE - speed - 1:
             camera_y, hero_y = motion(DOWN, camera_y, hero_y, speed)
             step_counter += speed / 3
             stop_motion[1] = DOWN
             motion_y = DOWN
-            direction_y = DOWN
             target_y -= speed
 
         if motion_x == RIGHT and stop_motion[0] != RIGHT:
@@ -320,33 +311,6 @@ def game_cycle(screen, width, height, save_number, sprites, step_sound):
         if motion_y == DOWN and stop_motion[1] != DOWN:
             camera_y, hero_y = motion(DOWN, camera_y, hero_y, speed)
             step_counter += speed / 3
-
-        action = "run"
-        if motion_x is None:
-            direction = direction_y
-        else:
-            direction = direction_x
-
-        if sprite is not None and sprite.check_collision(hero_group, width, height):
-            if hero.what_is_in_hands == "pickaxe":
-                action = "mine"
-            if hero.what_is_in_hands == "axe":
-                action = "cut_down"
-            direction = direction_x
-            if counter in [31, 63, 95]:
-                if action == "mine":
-                    world.object_grids, is_destroyed = sprite.update(world.object_grids)
-                    if is_destroyed:
-                        stones += 1
-                        hero.update_inventory(item_group, sprites, hot_bar, sprite.object_type)
-                        sprite, target_x, target_y = find_nearest_sprite(hero, sprite_groups_chunks,
-                                                                         hero_x, hero_y, width, height)
-                sprite_groups_chunks.draw(chunks)
-
-        frame_number = counter // 4 + 1
-        if motion_y is None and motion_x is None and action == "run":
-            frame_number = 0
-        hero.update(action, direction, frame_number)
 
         if hero_x >= width:
             if not up_chunk:
@@ -449,64 +413,60 @@ def game_cycle(screen, width, height, save_number, sprites, step_sound):
             right_up_chunk = [True, True]
             left_up_chunk = [True, True]
 
-        if camera_x + width // 2 < -width * 0.25 and not right_chunk:
+        if hero_x > width * 0.25 and not right_chunk:
             world.update(sprite_groups_chunks, RIGHT, (0.5, 1))
             sprite_groups_chunks.draw(chunks)
             right_chunk = True
-        if camera_x + width // 2 > -width * 0.75 and not left_chunk:
+        if hero_x < width * 0.75 and not left_chunk:
             world.update(sprite_groups_chunks, LEFT, (0, 0.5))
             sprite_groups_chunks.draw(chunks)
             left_chunk = True
-        if camera_y + height // 2 > -height * 0.75 and not up_chunk:
+        if hero_y < height * 0.75 and not up_chunk:
             world.update(sprite_groups_chunks, UP, (0, 0.5))
             sprite_groups_chunks.draw(chunks)
             up_chunk = True
-        if camera_y + height // 2 < -height * 0.25 and not down_chunk:
+        if hero_y > height * 0.25 and not down_chunk:
             world.update(sprite_groups_chunks, DOWN, (0.5, 1))
             sprite_groups_chunks.draw(chunks)
             down_chunk = True
 
-        if camera_x + width // 2 < -width // 2 and camera_y + height // 2 > -height // 2 and not right_up_chunk[0]:
+        if hero_x > width // 2 and hero_y < height // 2 and not right_up_chunk[0]:
             world.update(sprite_groups_chunks, RIGHT_UP, (0.5, 1))
             sprite_groups_chunks.draw(chunks)
             right_up_chunk[0] = True
-        if camera_x + width // 2 < -width // 2 and camera_y + height // 2 < -height // 2 and not right_down_chunk[0]:
+        if hero_x > width // 2 and hero_y > height // 2 and not right_down_chunk[0]:
             world.update(sprite_groups_chunks, RIGHT_DOWN, (0, 0.5))
             sprite_groups_chunks.draw(chunks)
             right_down_chunk[0] = True
-        if camera_x + width // 2 > -width // 2 and camera_y + height // 2 > -height // 2 and not left_up_chunk[0]:
+        if hero_x < width // 2 and hero_y < height // 2 and not left_up_chunk[0]:
             world.update(sprite_groups_chunks, LEFT_UP, (0.5, 1))
             sprite_groups_chunks.draw(chunks)
             left_up_chunk[0] = True
-        if camera_x + width // 2 > -width // 2 and camera_y + height // 2 < -height // 2 and not left_down_chunk[0]:
+        if hero_x < width // 2 and hero_y > height // 2 and not left_down_chunk[0]:
             world.update(sprite_groups_chunks, LEFT_DOWN, (0, 0.5))
             sprite_groups_chunks.draw(chunks)
             left_down_chunk[0] = True
 
-        if ((camera_x + width // 2 < -width * 0.75 and camera_y + height // 2 > -height // 2
-            and last_direction == RIGHT) or (camera_x + width // 2 < -width // 2
-            and camera_y + height // 2 > -height * 0.25 and last_direction == UP)) \
+        if ((hero_x > width * 0.75 and hero_y < height // 2 and last_direction == RIGHT) or
+            (hero_x > width // 2 and hero_y < height * 0.25 and last_direction == UP))\
                 and not right_up_chunk[1]:
             world.update(sprite_groups_chunks, RIGHT_UP, (0, 0.5))
             sprite_groups_chunks.draw(chunks)
             right_up_chunk[1] = True
-        if ((camera_x + width // 2 < -width * 0.75 and camera_y + height // 2 < -height // 2
-            and last_direction == RIGHT) or (camera_x + width // 2 < -width // 2
-            and camera_y + height // 2 < -height * 0.75 and last_direction == DOWN)) \
+        if ((hero_x > width * 0.75 and hero_y > height // 2 and last_direction == RIGHT) or
+            (hero_x > width // 2 and hero_y > height * 0.75 and last_direction == DOWN))\
                 and not right_down_chunk[1]:
             world.update(sprite_groups_chunks, RIGHT_DOWN, (0.5, 1))
             sprite_groups_chunks.draw(chunks)
             right_down_chunk[1] = True
-        if ((camera_x + width // 2 > -width * 0.25 and camera_y + height // 2 > -height // 2
-            and last_direction == LEFT) or (camera_x + width // 2 > -width // 2
-            and camera_y + height // 2 > -height * 0.25 and last_direction == UP)) \
+        if ((hero_x < width * 0.25 and hero_y < height // 2 and last_direction == LEFT) or
+            (hero_x < width // 2 and hero_y < height * 0.25 and last_direction == UP))\
                 and not left_up_chunk[1]:
             world.update(sprite_groups_chunks, LEFT_UP, (0, 0.5))
             sprite_groups_chunks.draw(chunks)
             left_up_chunk[1] = True
-        if ((camera_x + width // 2 > -width * 0.25 and camera_y + height // 2 < -height // 2
-            and last_direction == LEFT) or (camera_x + width // 2 > -width // 2
-            and camera_y + height // 2 < -height * 0.75 and last_direction == DOWN)) \
+        if ((hero_x < width * 0.25 and hero_y > height // 2 and last_direction == LEFT) or
+            (hero_x < width // 2 and hero_y > height * 0.75 and last_direction == DOWN))\
                 and not left_down_chunk[1]:
             world.update(sprite_groups_chunks, LEFT_DOWN, (0.5, 1))
             sprite_groups_chunks.draw(chunks)
@@ -522,4 +482,7 @@ def game_cycle(screen, width, height, save_number, sprites, step_sound):
         item_group.draw(screen)  # поправить
         for item in item_group:
             item.draw_amount(screen, item.pos_x, item.pos_y)  # поправить
+        if XXX == 0:
+            fps = round(1000 / time, 1)
+        print_text(screen, 20, 20, f"FPS: {fps}", font_color=(255, 0, 0), font_size=30)
         pygame.display.flip()

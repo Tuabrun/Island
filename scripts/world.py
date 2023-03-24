@@ -96,7 +96,7 @@ class World:
                     max_forest = number_of_forest
                     for x in range(self.width):
                         # если рядом с тайлом песка есть тайл травы, то тайл с песком становиться местом спавна
-                        if -0.2 <= line_x[x] < 0 and (line_x[x - 1] == 0 or line_x[x - 1] == 0):
+                        if -0.2 <= line_x[x] < 0 and (line_x[x - 1] == 0 or line_x[x + 1] == 0):
 
                             # координаты центрального чанка, где единичный отрезок - это размеры чанка
                             self.main_chunk_x = x // self.chunk_size_x
